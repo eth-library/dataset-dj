@@ -22,7 +22,7 @@ func sendNotification(fileNames []string) error {
 	m.SetHeader("Subject", "DataDJ Download completed")
 	m.SetBody("text/plain", content)
 
-	d := gomail.NewDialer("smtp.gmail.com", 587, "datadj.service@gmail.com", "LibLab123")
+	d := gomail.NewDialer("smtp.gmail.com", 587, "datadj.service@gmail.com", password)
 	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 	if err := d.DialAndSend(m); err != nil {
