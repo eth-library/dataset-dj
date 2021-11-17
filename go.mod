@@ -1,4 +1,4 @@
-module github.com/Watkey/datadj
+module github.com/eth-library-lab/dataset-dj
 
 go 1.17
 
