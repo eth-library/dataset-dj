@@ -7,11 +7,11 @@ import (
 var pathPrefix string = "/Users/magnuswuttke/coding/go/datadj/"
 var collection string = pathPrefix + "collection/"
 var storage string = pathPrefix + "storage/"
-var archiveName = "archive.zip"
 
 func main() {
 	router := gin.Default()
-	router.GET("/listFiles", getAvailableFiles)
-	router.POST("/getFiles", postFileList)
+	router.GET("/files", getAvailableFiles)
+	router.GET("/archive/:id", inspectArchive)
+	router.POST("/archive", handleArchive)
 	router.Run("localhost:8080")
 }

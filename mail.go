@@ -7,13 +7,13 @@ import (
 	gomail "gopkg.in/mail.v2"
 )
 
-func sendNotification(request fileRequest) error {
+func sendNotification(request archiveRequest) error {
 
-	content := "The following files have been downloaded and archived as " + archiveName + ". The archive can be retrieved from " + storage + ":\n\n"
+	content := "The following files have been downloaded and were archived as " + archBaseName + "_" + request.ArchiveID + ".zip:\n\n"
 	for _, name := range request.Files {
 		content = content + name + "\n"
 	}
-	content = content + "\n\nYours truly,\n\nThe DataDJ\n"
+	content = content + "\nThe archive can be retrieved from " + storage + "\n\nYours truly,\n\nThe DataDJ\n"
 
 	m := gomail.NewMessage()
 

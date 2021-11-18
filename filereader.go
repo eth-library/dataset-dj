@@ -8,19 +8,21 @@ import (
 	"os"
 )
 
-func getFiles(fileNames []string) error {
+var archBaseName string = "archive"
+
+func getFiles(request archiveRequest) error {
 
 	fmt.Println("creating zip archive...")
-	archive, err := os.Create(storage + archiveName)
+	archive, err := os.Create(storage + archBaseName + "_" + request.ArchiveID + ".zip")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer archive.Close()
 	zipWriter := zip.NewWriter(archive)
 
-	for i, file := range fileNames {
+	for i, file := range request.Files {
 
-		fmt.Printf("downloading file %d / %d: %s\n", i+1, len(fileNames), collection+file)
+		fmt.Printf("downloading file %d / %d: %s\n", i+1, len(request.Files), collection+file)
 		err := writeToZip(file, zipWriter)
 		if err != nil {
 			log.Fatal(err)
