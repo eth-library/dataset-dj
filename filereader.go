@@ -11,7 +11,7 @@ import (
 func getFiles(fileNames []string) error {
 
 	fmt.Println("creating zip archive...")
-	archive, err := os.Create(storage + "archive.zip")
+	archive, err := os.Create(storage + archiveName)
 	if err != nil {
 		log.Fatal(err)
 	}

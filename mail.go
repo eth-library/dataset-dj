@@ -7,10 +7,10 @@ import (
 	gomail "gopkg.in/mail.v2"
 )
 
-func sendNotification(fileNames []string) error {
+func sendNotification(request fileRequest) error {
 
 	content := "The following files have been downloaded and archived as " + archiveName + ". The archive can be retrieved from " + storage + ":\n\n"
-	for _, name := range fileNames {
+	for _, name := range request.Files {
 		content = content + name + "\n"
 	}
 	content = content + "\n\nYours truly,\n\nThe DataDJ\n"
@@ -18,7 +18,7 @@ func sendNotification(fileNames []string) error {
 	m := gomail.NewMessage()
 
 	m.SetHeader("From", "datadj.service@gmail.com")
-	m.SetHeader("To", "magnus.wuttke@librarylab.ethz.ch")
+	m.SetHeader("To", request.Email)
 	m.SetHeader("Subject", "DataDJ Download completed")
 	m.SetBody("text/plain", content)
 

@@ -8,6 +8,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type fileRequest struct {
+	Email string   `json:email`
+	Files []string `json:files`
+}
+
 // file represents metadata about a file
 type file struct {
 	ID       int32  `json:"id"`
@@ -52,21 +57,21 @@ func getAvailableFiles(c *gin.Context) {
 }
 
 func postFileList(c *gin.Context) {
-	var fileNames []string
+	var request fileRequest
 
-	if err := c.BindJSON(&fileNames); err != nil {
+	if err := c.BindJSON(&request); err != nil {
 		return
 	}
 
-	err := getFiles(fileNames)
+	err := getFiles(request.Files)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = sendNotification(fileNames)
+	err = sendNotification(request)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	c.IndentedJSON(http.StatusCreated, fileNames)
+	c.IndentedJSON(http.StatusCreated, request)
 
 }

@@ -11,7 +11,7 @@ var archiveName = "archive.zip"
 
 func main() {
 	router := gin.Default()
-	router.GET("/filelist", getAvailableFiles)
+	router.GET("/listFiles", getAvailableFiles)
 	router.POST("/getFiles", postFileList)
 	router.Run("localhost:8080")
 }
