@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -17,8 +16,8 @@ var (
 	rdbClient *redis.Client
 )
 
-// redis connection from tutorial:
-// https://tutorialedge.net/golang/go-redis-tutorial/
+// redis connection examples from: https://tutorialedge.net/golang/go-redis-tutorial/
+// pub-sub modified from: https://www.golangdev.in/2021/08/redis-publish-subscribe-example-using.html
 
 type metaArchive struct {
 	ID          string   `json:"id"`
@@ -45,15 +44,13 @@ func initRedisConnection() *redis.Client {
 }
 
 // for testing purposes create a dummy archive based on the variable i
-func createMetaArchive(i int) metaArchive {
+func createMetaArchive(filenames []string) metaArchive {
 
 	newUid := uuid.New().String()[:8]
 
-	file1 := fmt.Sprintf("image_%v.png", i)
-	file2 := fmt.Sprintf("image_%v.png", i+1)
 	newMetaArch := metaArchive{
 		ID:          newUid,
-		Files:       []string{file1, file2},
+		Files:       filenames,
 		TimeCreated: time.Now().String(),
 		TimeUpdated: "",
 		Status:      "opened",
@@ -62,12 +59,12 @@ func createMetaArchive(i int) metaArchive {
 	return newMetaArch
 }
 
-func publishToChannel(i int) {
+func publishToChannel(filenames []string) {
 
 	channelName := "default"
 	var newMetaArch metaArchive
 
-	newMetaArch = createMetaArchive(i)
+	newMetaArch = createMetaArchive(filenames)
 	jsonMessage, err := json.Marshal(newMetaArch)
 	if err != nil {
 		fmt.Println("error marshalling json: ", err)
@@ -77,7 +74,7 @@ func publishToChannel(i int) {
 	if nil != err {
 		fmt.Printf("Publish Error: %s", err.Error())
 	}
-	fmt.Println(i, "    published task: ", newMetaArch.ID, "  ", newMetaArch.Files)
+	fmt.Println("published task: ", newMetaArch.ID, " for ", newMetaArch.Files)
 
 }
 
@@ -146,8 +143,8 @@ func main() {
 	}
 	fmt.Println("got returned task: ", val)
 
-	var i int
-	i, err = strconv.Atoi(os.Args[1])
-	publishToChannel(i)
+	var filenames []string
+	filenames = os.Args[1:]
+	publishToChannel(filenames)
 
 }
