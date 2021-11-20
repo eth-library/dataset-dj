@@ -5,6 +5,7 @@ go 1.17
 require (
 	cloud.google.com/go/storage v1.18.2
 	github.com/gin-gonic/gin v1.7.4
+	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/google/uuid v1.3.0
 	google.golang.org/api v0.58.0
 	gopkg.in/mail.v2 v2.3.1
@@ -25,6 +26,8 @@ require (
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
 	github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742 // indirect
+	github.com/onsi/ginkgo v1.16.5 // indirect
+	github.com/onsi/gomega v1.17.0 // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
@@ -38,5 +41,5 @@ require (
 	google.golang.org/grpc v1.40.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
-	gopkg.in/yaml.v2 v2.2.8 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
