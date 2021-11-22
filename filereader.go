@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -10,10 +11,42 @@ import (
 
 var archBaseName string = "archive"
 
-func getFiles(request archiveRequest) error {
+func getFilesGC(request archiveRequest) error {
+	ctx := context.Background()
+	bkt := storageClient.Bucket(bucket)
+	archive := bkt.Object(archStorage + archBaseName + "_" + request.ArchiveID + ".zip")
+	storageWriter := archive.NewWriter(ctx)
+	defer storageWriter.Close()
+	zipWriter := zip.NewWriter(storageWriter)
+
+	for _, file := range request.Files {
+		obj := bkt.Object(file)
+		storageReader, err := obj.NewReader(ctx)
+		if err != nil {
+			return err
+		}
+		defer storageReader.Close()
+
+		zipFile, err := zipWriter.Create(file)
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(zipFile, storageReader)
+		if err != nil {
+			return err
+		}
+	}
+	err := zipWriter.Close()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetFilesLocal(request archiveRequest) error {
 
 	fmt.Println("creating zip archive...")
-	archive, err := os.Create(storage + archBaseName + "_" + request.ArchiveID + ".zip")
+	archive, err := os.Create(archStorage + archBaseName + "_" + request.ArchiveID + ".zip")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -23,7 +56,7 @@ func getFiles(request archiveRequest) error {
 	for i, file := range request.Files {
 
 		fmt.Printf("downloading file %d / %d: %s\n", i+1, len(request.Files), collection+file)
-		err := writeToZip(file, zipWriter)
+		err := WriteToZipLocal(file, zipWriter)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -34,7 +67,7 @@ func getFiles(request archiveRequest) error {
 	return nil
 }
 
-func writeToZip(fileName string, writer *zip.Writer) error {
+func WriteToZipLocal(fileName string, writer *zip.Writer) error {
 
 	f, err := os.Open(collection + fileName)
 	if err != nil {
