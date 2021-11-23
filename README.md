@@ -110,7 +110,7 @@ curl http://data-dj-2021.oa.r.appspot.com/archive \
 
 https://data-dj-2021.oa.r.appspot.com/archive/id
 
-This endpoint allows to inspect the contents of an archive `id`. The response is a JSON file that specifies the identifier and contents of the corresponding archive.
+This endpoint allows to inspect the contents of an archive `id` either in the browser or via `curl`. The response is a JSON object that specifies the identifier and contents of the corresponding archive.
 
 Example:
 ```bash
