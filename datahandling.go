@@ -9,7 +9,7 @@ import (
 var archives map[string]metaArchive = make(map[string]metaArchive)
 
 // file represents metadata about a file, not used so far
-type file struct {
+type File struct {
 	ID       int32  `json:"id"`
 	Name     string `json:"name"`
 	Location string `json:"location"`
@@ -30,22 +30,22 @@ type set struct {
 }
 
 // checks if elem is contained within set s
-func (s set) check(elem string) bool {
+func (s set) Check(elem string) bool {
 	return s.elems[elem]
 }
 
 // adds elem to set s
-func (s set) add(elem string) {
+func (s set) Add(elem string) {
 	s.elems[elem] = true
 }
 
 // deletes elem from set s
-func (s set) del(elem string) {
+func (s set) Del(elem string) {
 	delete(s.elems, elem)
 }
 
 // replace the elements of a set by the contents of a slice
-func (s set) setElemsFromSlice(slice []string) {
+func (s set) SetElemsFromSlice(slice []string) {
 	s.elems = map[string]bool{}
 	for _, e := range slice {
 		s.elems[e] = true

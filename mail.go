@@ -7,15 +7,19 @@ import (
 	gomail "gopkg.in/mail.v2"
 )
 
+// send email with download link to user once downloading and zipping of the files is complete
 func sendNotification(request archiveRequest) error {
 
-	archFile := archBaseName + "_" + request.ArchiveID + ".zip"
+	archFile := archBaseName + "_" + request.ArchiveID + ".zip" // name of the zip archive
+
+	// construct content of the mail
 	content := "The following files have been downloaded and were archived as " + archFile + ":\n\n"
 	for _, name := range request.Files {
 		content = content + name + "\n"
 	}
 	content = content + "\nThe archive can be retrieved from:\n" + "https://storage.googleapis.com/data-dj-2021.appspot.com/" + archStorage + archFile + "\n\nYours truly,\n\nThe DataDJ\n"
 
+	// create new email message
 	m := gomail.NewMessage()
 
 	m.SetHeader("From", "datadj.service@gmail.com")

@@ -1,5 +1,7 @@
 package main
 
+// generates the singed URLs when using them
+
 // import (
 // 	"fmt"
 // 	"time"

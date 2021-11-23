@@ -11,27 +11,29 @@ import (
 
 var archBaseName string = "archive"
 
+// Retrieve files contained by the metaArchive in the request and fetch them from the cloud storage
+// immediatly rewriting the to the storage as a zip archive
 func getFilesGC(request archiveRequest) error {
 	ctx := context.Background()
-	bkt := storageClient.Bucket(bucket)
-	archive := bkt.Object(archStorage + archBaseName + "_" + request.ArchiveID + ".zip")
-	storageWriter := archive.NewWriter(ctx)
+	bkt := storageClient.Bucket(bucket)                                                  // get bucket handle
+	archive := bkt.Object(archStorage + archBaseName + "_" + request.ArchiveID + ".zip") // create zip archive
+	storageWriter := archive.NewWriter(ctx)                                              // create writer that writes to the bucket
 	defer storageWriter.Close()
-	zipWriter := zip.NewWriter(storageWriter)
+	zipWriter := zip.NewWriter(storageWriter) // create zip writer that writes to the bucket writer
 
 	for _, file := range request.Files {
 		obj := bkt.Object(file)
-		storageReader, err := obj.NewReader(ctx)
+		storageReader, err := obj.NewReader(ctx) // file reader
 		if err != nil {
 			return err
 		}
 		defer storageReader.Close()
 
-		zipFile, err := zipWriter.Create(file)
+		zipFile, err := zipWriter.Create(file) // create the file inside the zip archive
 		if err != nil {
 			return err
 		}
-		_, err = io.Copy(zipFile, storageReader)
+		_, err = io.Copy(zipFile, storageReader) // copy content of the file into the new zipped version
 		if err != nil {
 			return err
 		}
@@ -43,6 +45,7 @@ func getFilesGC(request archiveRequest) error {
 	return nil
 }
 
+// Local version that simply copies the files into a newly created zip archive
 func GetFilesLocal(request archiveRequest) error {
 
 	fmt.Println("creating zip archive...")
@@ -67,6 +70,7 @@ func GetFilesLocal(request archiveRequest) error {
 	return nil
 }
 
+// Helper function for locally zipping the files
 func WriteToZipLocal(fileName string, writer *zip.Writer) error {
 
 	f, err := os.Open(collection + fileName)
