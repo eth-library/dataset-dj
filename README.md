@@ -44,8 +44,8 @@ curl http://data-dj-2021.oa.r.appspot.com/archive \
 --header "Content-Type: application/json" \
 --request "POST" \
 --data '{"email":"",
-          "archiveID":"",
-          "files":["data-mirror/cmt-001_1917_001_0015.jpg",
+         "archiveID":"",
+         "files":["data-mirror/cmt-001_1917_001_0015.jpg",
                    "data-mirror/cmt-001_1917_001_0019.jpg",
                    "data-mirror/cmt-001_1917_001_0057.jpg"]
         }'
@@ -62,8 +62,8 @@ curl http://data-dj-2021.oa.r.appspot.com/archive \
 --header "Content-Type: application/json" \
 --request "POST" \
 --data '{"email":"",
-          "archiveID":"9d0b43d5",
-          "files":["data-mirror/cmt-001_1917_001_0016.jpg",
+         "archiveID":"9d0b43d5",
+         "files":["data-mirror/cmt-001_1917_001_0016.jpg",
                    "data-mirror/cmt-001_1917_001_0017.jpg",
                    "data-mirror/cmt-001_1917_001_0059.jpg"]
         }'
@@ -80,8 +80,8 @@ curl http://data-dj-2021.oa.r.appspot.com/archive \
 --header "Content-Type: application/json" \
 --request "POST" \
 --data '{"email":"your.name@librarylab.ethz.ch",
-          "archiveID":"9d0b43d5",
-          "files":[]
+         "archiveID":"9d0b43d5",
+         "files":[]
         }'
 ```
 
@@ -97,8 +97,8 @@ curl http://data-dj-2021.oa.r.appspot.com/archive \
 --header "Content-Type: application/json" \
 --request "POST" \
 --data '{"email":"your.name@librarylab.ethz.ch",
-          "archiveID":"",
-          "files":["data-mirror/cmt-001_1917_001_0016.jpg",
+         "archiveID":"",
+         "files":["data-mirror/cmt-001_1917_001_0016.jpg",
                    "data-mirror/cmt-001_1917_001_0017.jpg",
                    "data-mirror/cmt-001_1917_001_0059.jpg"]
         }'
