@@ -1,5 +1,4 @@
 # DataDJ
-file aggregation and compression
 
 The DataDJ can be accessed at http://data-dj-2021.oa.r.appspot.com/
 
