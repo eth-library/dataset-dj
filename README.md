@@ -1,18 +1,51 @@
 # DataDJ
 
-The DataDJ can be accessed at http://data-dj-2021.oa.r.appspot.com/
+The DataDJ can be accessed at https://data-dj-2021.oa.r.appspot.com/
 
-## API Endpoints
 
-### Listing all available files (GET)
-http://data-dj-2021.oa.r.appspot.com/files
+## Quickstart Guide
+
+
+### 1. List available files (GET)
+https://data-dj-2021.oa.r.appspot.com/files
 
 You can call the endpoint within your browser or with `curl`.
 
 Example:
 
 ```bash
-curl http://data-dj-2021.oa.r.appspot.com/files 
+curl https://data-dj-2021.oa.r.appspot.com/files 
+```
+
+
+### 2. Request an archive from the list of files
+
+Edit the curl request below to include your `email` and the list of `files` that you want to download (note the included filepath).The endpoint can be called using `curl`. After a few minutes, you should receive an email with the download link.
+
+Example:
+```bash
+curl https://data-dj-2021.oa.r.appspot.com/archive \
+--include \
+--header "Content-Type: application/json" \
+--request "POST" \
+--data '{"email":"YOUR-ADDRESS@EMAIL.COM",
+         "files":["data-mirror/cmt-001_1917_001_0015.jpg",
+                   "data-mirror/cmt-001_1917_001_0019.jpg",
+                   "data-mirror/cmt-001_1917_001_0057.jpg"]
+        }'
+```
+---
+## API Endpoints
+
+### Listing all available files (GET)
+https://data-dj-2021.oa.r.appspot.com/files
+
+You can call the endpoint within your browser or with `curl`.
+
+Example:
+
+```bash
+curl https://data-dj-2021.oa.r.appspot.com/files 
 ```
 
 ---
@@ -39,11 +72,11 @@ Both `email` and `archiveID` are left empty, whereas `files` contains the names 
 
 Example:
 ```bash
-curl http://data-dj-2021.oa.r.appspot.com/archive \
+curl https://data-dj-2021.oa.r.appspot.com/archive \
 --include \
 --header "Content-Type: application/json" \
 --request "POST" \
---data '{"email":"",
+--data '{"email":"barry.sunderland@librarylab.ethz.ch",
          "archiveID":"",
          "files":["data-mirror/cmt-001_1917_001_0015.jpg",
                    "data-mirror/cmt-001_1917_001_0019.jpg",
@@ -57,7 +90,7 @@ curl http://data-dj-2021.oa.r.appspot.com/archive \
 
 Example:
 ```bash
-curl http://data-dj-2021.oa.r.appspot.com/archive \
+curl https://data-dj-2021.oa.r.appspot.com/archive \
 --include \
 --header "Content-Type: application/json" \
 --request "POST" \
@@ -75,7 +108,7 @@ curl http://data-dj-2021.oa.r.appspot.com/archive \
 
 Example:
 ```bash
-curl http://data-dj-2021.oa.r.appspot.com/archive \
+curl https://data-dj-2021.oa.r.appspot.com/archive \
 --include \
 --header "Content-Type: application/json" \
 --request "POST" \
@@ -92,7 +125,7 @@ The DJ creates an archive of the files in the request and will also return its i
 
 Example:
 ```bash
-curl http://data-dj-2021.oa.r.appspot.com/archive \
+curl https://data-dj-2021.oa.r.appspot.com/archive \
 --include \
 --header "Content-Type: application/json" \
 --request "POST" \
@@ -114,6 +147,6 @@ This endpoint allows to inspect the contents of an archive `id` either in the br
 
 Example:
 ```bash
-curl http://data-dj-2021.oa.r.appspot.com/archive/9d0b43d5
+curl https://data-dj-2021.oa.r.appspot.com/archive/9d0b43d5
 ```
 
