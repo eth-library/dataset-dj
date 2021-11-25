@@ -28,7 +28,7 @@ curl https://data-dj-2021.oa.r.appspot.com/archive \
 --include \
 --header "Content-Type: application/json" \
 --request "POST" \
---data '{"email":"YOUR-ADDRESS@EMAIL.COM",
+--data '{"email":"your.name@librarylab.ethz.ch",
          "files":["data-mirror/cmt-001_1917_001_0015.jpg",
                    "data-mirror/cmt-001_1917_001_0019.jpg",
                    "data-mirror/cmt-001_1917_001_0057.jpg"]
@@ -76,7 +76,7 @@ curl https://data-dj-2021.oa.r.appspot.com/archive \
 --include \
 --header "Content-Type: application/json" \
 --request "POST" \
---data '{"email":"barry.sunderland@librarylab.ethz.ch",
+--data '{"email":"your.name@librarylab.ethz.ch",
          "archiveID":"",
          "files":["data-mirror/cmt-001_1917_001_0015.jpg",
                    "data-mirror/cmt-001_1917_001_0019.jpg",
