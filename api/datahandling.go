@@ -108,7 +108,7 @@ func listFileDir(dirPath string) ([]string, error) {
 // little helper function that pipelines the download of the files contained in a metaArchive,
 // the creation of the zip archive and sending a mail with the download link to the user together
 func downloadFiles(request archiveRequest) {
-	err := getFilesGC(request)
+	err := zipFilesGC(request)
 	if err != nil {
 		log.Fatal(err)
 	}

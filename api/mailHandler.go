@@ -23,7 +23,7 @@ func sendNotification(request archiveRequest) error {
 	for _, name := range request.Files {
 		content = content + name + "\n"
 	}
-	content = content + "\nThe archive can be retrieved from:\n" + "https://storage.googleapis.com/data-dj-2021.appspot.com/" + archStorage + archFile + "\n\nYours truly,\n\nThe DataDJ\n"
+	content = content + "\nThe archive can be retrieved from:\n" + "https://storage.googleapis.com/data-dj-2021.appspot.com/" + config.archiveBucketPrefix + archFile + "\n\nYours truly,\n\nThe DataDJ\n"
 
 	// create new email message
 	m := gomail.NewMessage()

@@ -12,11 +12,6 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-var (
-	prefix string = "data-mirror/" // makes sure that getAvailableFilesGC() only returns files with prefix
-	delim  string = "/"
-)
-
 // archiveRequest is the main data structure that is being received by the API when information or
 // modifications about archives are requested. Email simply is an email as string, ArchiveID is the UID of
 // a metaArchive as string and Files is a list of fileNames as strings. Possible combinations:
@@ -40,7 +35,7 @@ type archiveRequest struct {
 func getAvailableFilesLocal(c *gin.Context) {
 	var availableFiles []string
 
-	dirPath := collection
+	dirPath := config.sourceLocalDir
 	availableFiles, err := listFileDir(dirPath)
 
 	if err != nil {
@@ -61,11 +56,10 @@ func getAvailableFilesGC(c *gin.Context) {
 
 	// get bucket handler and obtain an iterator over all objects returned by query
 
-	bucket := storageClient.Bucket(bucketName)
+	bucket := storageClient.Bucket(config.sourceBucketName)
 
 	it := bucket.Objects(ctx, &storage.Query{
-		Prefix:    prefix,
-		Delimiter: delim,
+		Prefix: config.sourceBucketPrefix,
 	})
 
 	// Loop over all objects returned by the query
@@ -80,7 +74,7 @@ func getAvailableFilesGC(c *gin.Context) {
 			break
 		}
 
-		if attrs.Name == prefix { // make sure the directory is not listed as available file
+		if attrs.Name == config.sourceBucketPrefix { // make sure the directory is not listed as available file
 			continue
 		}
 		availableFiles = append(availableFiles, attrs.Name)
