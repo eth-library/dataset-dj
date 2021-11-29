@@ -13,6 +13,7 @@
 .git
 .gitignore
 
+secrets/
 # Binaries for programs and plugins
 *.exe
 *.exe~

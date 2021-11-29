@@ -12,10 +12,10 @@ import (
 var archBaseName string = "archive"
 
 // Retrieve files contained by the metaArchive in the request and fetch them from the cloud storage
-// immediatly rewriting the to the storage as a zip archive
+// immediately rewriting the to the storage as a zip archive
 func getFilesGC(request archiveRequest) error {
 	ctx := context.Background()
-	bkt := storageClient.Bucket(bucket)                                                  // get bucket handle
+	bkt := storageClient.Bucket(bucketName)                                              // get bucket handle
 	archive := bkt.Object(archStorage + archBaseName + "_" + request.ArchiveID + ".zip") // create zip archive
 	storageWriter := archive.NewWriter(ctx)                                              // create writer that writes to the bucket
 	defer storageWriter.Close()
@@ -45,7 +45,7 @@ func getFilesGC(request archiveRequest) error {
 	return nil
 }
 
-// Local version that simply copies the files into a newly created zip archive
+// GetFilesLocal copies files accesible by local filepaths into a newly created zip archive
 func GetFilesLocal(request archiveRequest) error {
 
 	fmt.Println("creating zip archive...")
@@ -70,7 +70,7 @@ func GetFilesLocal(request archiveRequest) error {
 	return nil
 }
 
-// Helper function for locally zipping the files
+//WriteToZipLocal is a helper function for locally zipping files
 func WriteToZipLocal(fileName string, writer *zip.Writer) error {
 
 	f, err := os.Open(collection + fileName)

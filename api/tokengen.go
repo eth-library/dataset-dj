@@ -6,12 +6,12 @@ import (
 
 func generateToken() string {
 	// Generate UUID for archives and use only the first 4 bytes
-	newUid := uuid.New().String()[:8]
+	newUID := uuid.New().String()[:8]
 
 	// Regenerate new UUIDs as long as there are collisions
-	for _, ok := archives[newUid]; ok; {
-		newUid = uuid.New().String()[:8]
+	for _, ok := archives[newUID]; ok; {
+		newUID = uuid.New().String()[:8]
 	}
 
-	return newUid
+	return newUID
 }

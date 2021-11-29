@@ -1,5 +1,7 @@
 data/
-
+gcloud-app-key-file.json
+*key-file.json
+.env*
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

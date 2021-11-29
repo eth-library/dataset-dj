@@ -1,4 +1,4 @@
-runtime: go116
+runtime: go117
 
 # set to smallest vm size
 instance_class: B1

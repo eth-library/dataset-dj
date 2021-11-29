@@ -8,7 +8,7 @@ import (
 // "Database" for the metaArchives so far
 var archives map[string]metaArchive = make(map[string]metaArchive)
 
-// file represents metadata about a file, not used so far
+// File represents metadata about a file, not used so far
 type File struct {
 	ID       int32  `json:"id"`
 	Name     string `json:"name"`
@@ -20,8 +20,11 @@ type File struct {
 // the download process. Files is implemented as a set in order to avoid duplicate files within a
 // metaArchive
 type metaArchive struct {
-	ID    string `json:"id"`
-	Files set    `json:"files"`
+	ID          string `json:"id"`
+	Files       set    `json:"files"`
+	TimeCreated string `json:"timeCreated"`
+	TimeUpdated string `json:"timeUpdated"`
+	Status      string `json:"status"`
 }
 
 // a set is a struct with one attribute that are its elements contained within a map

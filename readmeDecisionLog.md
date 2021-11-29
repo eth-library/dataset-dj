@@ -39,9 +39,11 @@ frameworks for http services with lots of support online.
 
 
 ## Architecture Pattern
-_decision:_ __asynchronous task queues__ (using Redis Lists)   
+_decision:_ __asynchronous task queues__ (self implemented using Redis Lists)   
 
 _alternatives:_  synchronous task handling, Stream-based asynchronous communication
+
+_implementation alternatives:_ [asynq](https://github.com/hibiken/asynq)
 
 _justification:_ improves scalability, even if request rates are high or jobs take a long time, the jobs will still complete and it just takes longer to receive the download email.   
 Redis is a highly performant in memory database with free to use container images. 

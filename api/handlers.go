@@ -36,8 +36,8 @@ type archiveRequest struct {
 	Files     []string `json:"files"`
 }
 
-// get a list of all available filenames inside a local directory as JSON
-func GetAvailableFilesLocal(c *gin.Context) {
+//getAvailableFilesLocal gets a list of all available filenames inside a local directory as JSON
+func getAvailableFilesLocal(c *gin.Context) {
 	var availableFiles []string
 
 	dirPath := collection
@@ -60,21 +60,26 @@ func getAvailableFilesGC(c *gin.Context) {
 	defer cancel()
 
 	// get bucket handler and obtain an iterator over all objects returned by query
-	it := storageClient.Bucket(bucket).Objects(ctx, &storage.Query{
+
+	bucket := storageClient.Bucket(bucketName)
+
+	it := bucket.Objects(ctx, &storage.Query{
 		Prefix:    prefix,
 		Delimiter: delim,
 	})
+
 	// Loop over all objects returned by the query
 	for {
 		attrs, err := it.Next()
-		if err == iterator.Done {
-			break
-		}
 		if err != nil {
 			log.Fatal(err)
 			c.IndentedJSON(http.StatusBadRequest, "An error occured while listing the files")
-
 		}
+
+		if err == iterator.Done {
+			break
+		}
+
 		if attrs.Name == prefix { // make sure the directory is not listed as available file
 			continue
 		}
@@ -111,7 +116,8 @@ func handleArchive(c *gin.Context) {
 	}
 
 	if request.Email != "" && request.ArchiveID != "" { // Email and ArchiveID set
-		if archive, ok := archives[request.ArchiveID]; ok {
+		fmt.Println("Email and ArchiveID set")
+		if archive, ok := archives[request.ArchiveID]; ok { // TO DO replace in-memory map lookup with db query
 			downloadReq := request
 			downloadReq.Files = archive.Files.toSlice()
 			downloadFiles(downloadReq)
@@ -131,13 +137,20 @@ func handleArchive(c *gin.Context) {
 			return
 		}
 	} else if request.Email != "" && len(request.Files) != 0 { // Email and Files set, ArchiveID empty
+
 		// Create new metaArchive with random UID
-		archive := metaArchive{ID: generateToken(), Files: setFromSlice(request.Files)}
-		archives[archive.ID] = archive
-		downloadReq := request
-		downloadReq.ArchiveID = archive.ID
-		downloadFiles(downloadReq)
-		c.IndentedJSON(http.StatusOK, downloadReq)
+		newArchive := metaArchive{
+			ID:          generateToken(),
+			Files:       setFromSlice(request.Files),
+			TimeCreated: time.Now().String(),
+			TimeUpdated: "",
+			Status:      "opened",
+		}
+		archives[newArchive.ID] = newArchive //save to in memory map for now. eventually store in DB
+
+		publishArchiveTask(newArchive)
+		// downloadFiles(downloadReq)
+		c.IndentedJSON(http.StatusOK, newArchive)
 
 	} else if len(request.Files) != 0 { // Files set, Email and ArchiveID empty
 		// Create new metaArchive with random UID

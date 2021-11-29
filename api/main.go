@@ -12,7 +12,7 @@ import (
 var (
 	// pathPrefix string = "/Users/magnuswuttke/coding/go/datadj/"
 	// privateKey    []byte
-	bucket        string          // bucket name used to create bucket handlers
+	bucketName    string          // bucket name used to create bucket handlers
 	storageClient *storage.Client // client used to connect to the storage in order to read and write files
 )
 
@@ -27,12 +27,15 @@ func main() {
 	ctx := context.Background()
 	var err error
 
-	bucket = os.Getenv("GCLOUD_STORAGE_BUCKET") // The bucket name is set as an environment variable, see app.yaml file
+	bucketName = os.Getenv("GCLOUD_STORAGE_BUCKET") // The bucket name is set as an environment variable, see app.yaml file
 	storageClient, err = storage.NewClient(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer storageClient.Close()
+
+	// connect to redis instance
+	rdbClient = initRedisConnection()
 
 	port := os.Getenv("PORT") // Retrieve the PORT env variable for usage within the google cloud
 	if port == "" {
@@ -45,26 +48,6 @@ func main() {
 	router.GET("/archive/:id", inspectArchive)
 	router.POST("/archive", handleArchive)
 	router.GET("/check", healthCheck)
-	router.Run("localhost:" + port)
+	router.Run("0.0.0.0:" + port) // bind to 0.0.0.0 to receive requests from outside docker container
 
-	// -------------------------------------------------------------------------------------------------------------------- //
-	// This portion of the code is only being used when signing URLs, which is not the default behaviour of the DJ
-
-	// This portion
-	// bkt := storageClient.Bucket(bucket)
-	// file := bkt.Object("key-files/data-dj-2021-9c94dd68fe31.json")
-	// fileReader, err := file.NewReader(ctx)
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
-	// defer fileReader.Close()
-
-	// buf := new(bytes.Buffer)
-	// buf.ReadFrom(fileReader)
-
-	// cfg, err := google.JWTConfigFromJSON(buf.Bytes())
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
-	// privateKey = cfg.PrivateKey
 }

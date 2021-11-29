@@ -3,8 +3,14 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	"os"
 
 	gomail "gopkg.in/mail.v2"
+)
+
+var (
+	serviceEmailAddress  = os.Getenv("EMAIL_ADDRESS")
+	serviceEmailPassword = os.Getenv("EMAIL_PASSWORD")
 )
 
 // send email with download link to user once downloading and zipping of the files is complete
@@ -22,12 +28,12 @@ func sendNotification(request archiveRequest) error {
 	// create new email message
 	m := gomail.NewMessage()
 
-	m.SetHeader("From", "datadj.service@gmail.com")
+	m.SetHeader("From", serviceEmailAddress)
 	m.SetHeader("To", request.Email)
 	m.SetHeader("Subject", "DataDJ Download completed")
 	m.SetBody("text/plain", content)
 
-	d := gomail.NewDialer("smtp.gmail.com", 587, "datadj.service@gmail.com", password)
+	d := gomail.NewDialer("smtp.gmail.com", 587, "datadj.service@gmail.com", serviceEmailPassword)
 	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 	if err := d.DialAndSend(m); err != nil {
