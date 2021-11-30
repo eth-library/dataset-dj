@@ -166,7 +166,12 @@ func handleArchive(c *gin.Context) {
 		archiveTask := request
 		archiveTask.ArchiveID = newArchive.ID
 
-		publishArchiveTask(archiveTask)
+		err := publishArchiveTask(archiveTask)
+		if err != nil {
+			fmt.Println("error publishing archive task", err)
+			c.IndentedJSON(http.StatusInternalServerError, "could not request archive creation")
+			return
+		}
 		c.IndentedJSON(http.StatusOK, newArchive)
 
 	} else if len(request.Files) != 0 { // Files set, Email and ArchiveID empty
