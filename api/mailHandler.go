@@ -33,7 +33,7 @@ func sendNotification(request archiveRequest) error {
 	m.SetHeader("Subject", "DataDJ Download completed")
 	m.SetBody("text/plain", content)
 
-	d := gomail.NewDialer("smtp.gmail.com", 587, "datadj.service@gmail.com", serviceEmailPassword)
+	d := gomail.NewDialer("smtp.gmail.com", 587, serviceEmailAddress, serviceEmailPassword)
 	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 	if err := d.DialAndSend(m); err != nil {

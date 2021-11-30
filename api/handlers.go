@@ -35,8 +35,7 @@ type archiveRequest struct {
 func getAvailableFilesLocal(c *gin.Context) {
 	var availableFiles []string
 
-	dirPath := config.sourceLocalDir
-	availableFiles, err := listFileDir(dirPath)
+	availableFiles, err := listFileDir(config.sourceLocalDir)
 
 	if err != nil {
 		log.Fatal(err)

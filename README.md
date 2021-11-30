@@ -172,3 +172,24 @@ go run taskPublisher/main.go img151.png img8.png
 ```
 
 run the script to publish a new task
+
+# Local Development and Deployment
+
+1. make a copy of `.env.example` and save it as `.env.local`    
+1. replace the example directory paths, bucketnames and other settings as needed.  
+1. run the api with one of these options:
+
+_option a:_  
+To run the application locally using go, export all of the variables
+```
+source .env.local
+export $(cut -d= -f1 .env.local)
+go ./api/*.go
+```
+note that for changes in the environment file to take effect, you must export the variables again and restart the app.
+
+_option b:_  
+to run using docker. include the path to the .env.local file in the docker run command.
+```
+docker run --env-file=./.env.local -p 8080:8080 data-dj-image
+```
