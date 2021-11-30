@@ -25,6 +25,7 @@ type metaArchive struct {
 	TimeCreated string `json:"timeCreated"`
 	TimeUpdated string `json:"timeUpdated"`
 	Status      string `json:"status"`
+	Source      string `json:"source"`
 }
 
 // a set is a struct with one attribute that are its elements contained within a map
@@ -103,17 +104,4 @@ func listFileDir(dirPath string) ([]string, error) {
 	}
 
 	return filenames, nil
-}
-
-// little helper function that pipelines the download of the files contained in a metaArchive,
-// the creation of the zip archive and sending a mail with the download link to the user together
-func downloadFiles(request archiveRequest) {
-	err := zipFilesGC(request)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = sendNotification(request)
-	if err != nil {
-		log.Fatal(err)
-	}
 }

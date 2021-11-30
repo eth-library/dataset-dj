@@ -9,7 +9,25 @@ import (
 	"os"
 )
 
-var archBaseName string = "archive"
+var archBaseName string = "archive" // prefix to include at start of archive filename
+
+func zipFiles(archRequest archiveRequest) error {
+
+	var err error
+	if archRequest.Source == "local" {
+		err = zipFilesLocal(archRequest)
+		if err != nil {
+			fmt.Println("error returned while zipping local files", err)
+		}
+	} else { // assume from cloud bucket
+		err = zipFilesGC(archRequest)
+		if err != nil {
+			fmt.Println("error returned while zipping local files", err)
+		}
+
+	}
+	return err
+}
 
 // zipFilesGC retrieves files listed in the metaArchive request and fetches them from the cloud storage
 // immediately rewriting the to the storage as a zip archive
@@ -49,7 +67,8 @@ func zipFilesGC(request archiveRequest) error {
 func zipFilesLocal(request archiveRequest) error {
 
 	fmt.Println("creating local zip archive...")
-	archive, err := os.Create(config.archiveLocalDir + archBaseName + "_" + request.ArchiveID + ".zip")
+	archiveFilePath := config.archiveLocalDir + archBaseName + "_" + request.ArchiveID + ".zip"
+	archive, err := os.Create(archiveFilePath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,15 +77,15 @@ func zipFilesLocal(request archiveRequest) error {
 
 	for i, file := range request.Files {
 
-		fmt.Printf("downloading file %d / %d: %s\n", i+1, len(request.Files), config.sourceLocalDir+file)
+		fmt.Printf("zipping file %d / %d: %s\n", i+1, len(request.Files), config.sourceLocalDir+file)
 		err := WriteToZipLocal(file, zipWriter)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	fmt.Println("closing zip archive...")
 	zipWriter.Close()
+	fmt.Println("zip archive written to: ", archiveFilePath)
 	return nil
 }
 

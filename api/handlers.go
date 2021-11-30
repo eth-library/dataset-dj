@@ -29,12 +29,14 @@ type archiveRequest struct {
 	Email     string   `json:"email"`
 	ArchiveID string   `json:"archiveID"`
 	Files     []string `json:"files"`
+	Source    string   `json:"source"`
 }
 
 //getAvailableFilesLocal gets a list of all available filenames inside a local directory as JSON
+// mostly intended as a debugging/development aid rather than a end-user endpoint
 func getAvailableFilesLocal(c *gin.Context) {
 	var availableFiles []string
-
+	//TO DO return bad request of no source local dir
 	availableFiles, err := listFileDir(config.sourceLocalDir)
 
 	if err != nil {
@@ -113,7 +115,10 @@ func handleArchive(c *gin.Context) {
 		if archive, ok := archives[request.ArchiveID]; ok { // TO DO replace in-memory map lookup with db query
 			downloadReq := request
 			downloadReq.Files = archive.Files.toSlice()
-			downloadFiles(downloadReq)
+
+			fmt.Println("TO DO write new metaArchive to db")
+			// TO DO write new metaArchive to db
+
 			c.IndentedJSON(http.StatusOK, downloadReq)
 		} else {
 			c.IndentedJSON(http.StatusBadRequest, "archive not found")
@@ -123,13 +128,40 @@ func handleArchive(c *gin.Context) {
 		if archive, ok := archives[request.ArchiveID]; ok {
 			fileSet := setFromSlice(request.Files)
 			archive.Files = setUnion(archive.Files, fileSet)
-			archives[request.ArchiveID] = archive
+
+			fmt.Println("TO DO update metaArchive in db")
+			// TO DO update metaArchive in db
+
 			c.IndentedJSON(http.StatusOK, request)
 		} else {
 			c.IndentedJSON(http.StatusBadRequest, "archive not found")
 			return
 		}
 	} else if request.Email != "" && len(request.Files) != 0 { // Email and Files set, ArchiveID empty
+
+		if request.Source == "" {
+			request.Source = "cloud"
+		}
+		// Create new metaArchive with random UID
+		newArchive := metaArchive{
+			ID:          generateToken(),
+			Files:       setFromSlice(request.Files),
+			TimeCreated: time.Now().String(),
+			TimeUpdated: "",
+			Status:      "opened",
+			Source:      "local",
+		}
+
+		fmt.Println("TO DO write new metaArchive to db")
+		//TO DO store newMetaArchive in DB
+
+		archiveTask := request
+		archiveTask.ArchiveID = newArchive.ID
+
+		publishArchiveTask(archiveTask)
+		c.IndentedJSON(http.StatusOK, newArchive)
+
+	} else if len(request.Files) != 0 { // Files set, Email and ArchiveID empty
 
 		// Create new metaArchive with random UID
 		newArchive := metaArchive{
@@ -138,19 +170,13 @@ func handleArchive(c *gin.Context) {
 			TimeCreated: time.Now().String(),
 			TimeUpdated: "",
 			Status:      "opened",
+			Source:      "local",
 		}
-		archives[newArchive.ID] = newArchive //save to in memory map for now. eventually store in DB
 
-		publishArchiveTask(newArchive)
-		// downloadFiles(downloadReq)
-		c.IndentedJSON(http.StatusOK, newArchive)
+		fmt.Println("TO DO write new metaArchive to db")
+		//TO DO store newMetaArchive in DB
 
-	} else if len(request.Files) != 0 { // Files set, Email and ArchiveID empty
-		// Create new metaArchive with random UID
-		archive := metaArchive{ID: generateToken(), Files: setFromSlice(request.Files)}
-		archives[archive.ID] = archive
-		request.ArchiveID = archive.ID
-		c.IndentedJSON(http.StatusCreated, request)
+		c.IndentedJSON(http.StatusCreated, newArchive)
 	} else {
 		c.IndentedJSON(http.StatusBadRequest, "invalid request format")
 	}

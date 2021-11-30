@@ -31,16 +31,19 @@ func initRedisConnection() *redis.Client {
 
 }
 
-func publishArchiveTask(newMetaArchive metaArchive) error {
+//publishArchiveTask marshals a struct into json
+// and publishes to a redis channel where the task will be
+// handled by a subscriber/worker
+func publishArchiveTask(archiveTask archiveRequest) error {
 
 	//convert struct to json
-	jsonMessage, err := json.Marshal(newMetaArchive)
+	jsonMessage, err := json.Marshal(archiveTask)
 	if err != nil {
 		fmt.Println("error marshalling json: ", err)
 		return err
 	}
 	//publish to channel
-	channelName := "default"
+	channelName := "archives"
 	err = rdbClient.Publish(channelName, jsonMessage).Err()
 	if nil != err {
 		fmt.Printf("Publish Error: %s", err.Error())
