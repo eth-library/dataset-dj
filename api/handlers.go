@@ -110,6 +110,14 @@ func handleArchive(c *gin.Context) {
 		return
 	}
 
+	// validate email format
+	if request.Email != "" {
+		if !emailIsValid(request.Email) {
+			c.IndentedJSON(http.StatusBadRequest, "invalid email address")
+			return
+		}
+	}
+
 	if request.Email != "" && request.ArchiveID != "" { // Email and ArchiveID set
 		fmt.Println("Email and ArchiveID set")
 		if archive, ok := archives[request.ArchiveID]; ok { // TO DO replace in-memory map lookup with db query

@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	"log"
+	"net/mail"
 )
 
 // "Database" for the metaArchives so far
@@ -31,6 +32,11 @@ type metaArchive struct {
 // a set is a struct with one attribute that are its elements contained within a map
 type set struct {
 	elems map[string]bool
+}
+
+func emailIsValid(email string) bool {
+	_, err := mail.ParseAddress(email)
+	return err == nil
 }
 
 // checks if elem is contained within set s
