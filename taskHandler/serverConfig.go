@@ -10,6 +10,7 @@ import (
 // it gets initialised by a function and should be globally accessible
 type serverConfig struct {
 	projectID           string // google cloud project-id that contains bucket resources
+	archiveBaseURL      string // url where zip files will be accessible from
 	sourceBucketName    string // name of bucket where provided files are stored
 	sourceBucketPrefix  string // only returns files within this directory in the bucket
 	archiveBucketName   string // name of bucket where archive files will be written to
@@ -23,7 +24,8 @@ type serverConfig struct {
 //initServerConfig initiliases the serverConfig struct with all of the environment variables
 func initServerConfig() *serverConfig {
 	cfg := serverConfig{
-		projectID:           os.Getenv("PROJECT_ID"),            //for example: "data-dj-2021
+		projectID:           os.Getenv("PROJECT_ID"), //for example: "data-dj-2021
+		archiveBaseURL:      os.Getenv("ARCHIVE_BASE_URL"),
 		sourceBucketName:    os.Getenv("SOURCE_BUCKET_NAME"),    //for example: "data-dj-2021.appspot.com",
 		sourceBucketPrefix:  os.Getenv("SOURCE_BUCKET_PREFIX"),  //for example: "data-mirror/",
 		archiveBucketName:   os.Getenv("ARCHIVE_BUCKET_NAME"),   //for example: "data-dj-2021.appspot.com",
