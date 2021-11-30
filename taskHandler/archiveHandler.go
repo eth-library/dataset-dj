@@ -12,6 +12,7 @@ import (
 
 var archBaseName string = "archive" // prefix to include at start of archive filename
 
+//handleArchiveMessage handles a message received in the 'archives' channel
 func handleArchiveMessage(messagePayload string) {
 
 	var archRequest archiveRequest
@@ -107,7 +108,7 @@ func zipFilesLocal(request archiveRequest) error {
 	return nil
 }
 
-//WriteToZipLocal is a helper function for locally zipping files
+//WriteToZipLocal is a helper function for writing an individual local file to zip.Writer object
 func WriteToZipLocal(fileName string, writer *zip.Writer) error {
 
 	f, err := os.Open(config.sourceLocalDir + fileName)
