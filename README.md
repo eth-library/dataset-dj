@@ -152,44 +152,56 @@ curl https://data-dj-2021.oa.r.appspot.com/archive/9d0b43d5
 
 
 
-# task queue / pub sub model with redis
-
-download and run redis image with docker
-```
-docker pull redis
-docker run --name redis-test-instance -p 6379:6379 -d redis
-```
-run the taskSubscriber to start listening to tasks.  
-from the project root  
-```
-go run taskSubscriber/main.go
-``` 
-
-in an another terminal from the project root, publish task from the command line  
-the command line arguments will be added as the list of files in the task. for example:   
-```
-go run taskPublisher/main.go img151.png img8.png
-```
-
-run the script to publish a new task
-
-# Local Development and Deployment
+# Local Development
 
 1. make a copy of `.env.example` and save it as `.env.local`    
 1. replace the example directory paths, bucketnames and other settings as needed.  
-1. run the api with one of these options:
 
-_option a:_  
-To run the application locally using go, export all of the variables
+_option a: run with go_  
+
+download and run the redis image with docker 
+```
+docker pull redis
+docker run --name dj-redis -p 6379:6379 -d redis
+```
+_start the task handler_  
+open a terminal in project root.  
+export all of the variables in the `.env.local` file  
+run the task handler
 ```
 source .env.local
 export $(cut -d= -f1 .env.local)
-go ./api/*.go
+go run ./taskHandler/*.go
 ```
-note that for changes in the environment file to take effect, you must export the variables again and restart the app.
 
-_option b:_  
-to run using docker. include the path to the .env.local file in the docker run command.
+open a separate terminal in project root.  
+export all of the variables in the `.env.local` file  
+run the api  
+```
+source .env.local
+export $(cut -d= -f1 .env.local)
+go run ./api/*.go
+```
+note that for any changes in the environment file to take effect, you must export the variables again and restart that part of the application.
+
+
+_option b: (to be completed)_  
+to run publisher and subscriber applications using docker. include the path to the .env.local file in the docker run command.
 ```
 docker run --env-file=./.env.local -p 8080:8080 data-dj-image
+```
+
+send a request
+```
+curl http://0.0.0.0:8765/archive \
+--include \
+--header "Content-Type: application/json" \
+--request "POST" \
+--data '{"email":"barry.sunderland@librarylab.ethz.ch",
+         "archiveID":"",
+         "files":["cmt-001_1917_001_0016.jpg",
+                   "cmt-001_1917_001_0017.jpg",
+                   "cmt-001_1917_001_0059.jpg"],
+        "source":"local"
+        }'
 ```
