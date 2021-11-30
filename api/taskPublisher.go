@@ -50,7 +50,7 @@ func publishArchiveTask(archiveTask archiveRequest) error {
 		return err
 	}
 
-	fmt.Print("published archive task")
+	fmt.Println("published archive task")
 	return nil
 
 }

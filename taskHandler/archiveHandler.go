@@ -3,6 +3,7 @@ package main
 import (
 	"archive/zip"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -11,6 +12,23 @@ import (
 
 var archBaseName string = "archive" // prefix to include at start of archive filename
 
+func handleArchiveMessage(messagePayload string) {
+
+	var archRequest archiveRequest
+
+	// convert json string into struct
+	json.Unmarshal([]byte(messagePayload), &archRequest)
+
+	fmt.Println("handling archRequest: ", archRequest)
+	err := zipFiles(archRequest)
+	if err == nil && archRequest.Email != "" {
+		publishEmailTask(archRequest)
+	} else {
+		fmt.Println("err: ", err)
+	}
+}
+
+//zipFiles is a wrapper function that decides if zipFilesLocal or zipFilesGC ('zipFilesGoogleCloud') should be called
 func zipFiles(archRequest archiveRequest) error {
 
 	var err error
@@ -66,7 +84,7 @@ func zipFilesGC(request archiveRequest) error {
 // zipFilesLocal copies files accesible by local filepaths into a newly created zip archive
 func zipFilesLocal(request archiveRequest) error {
 
-	fmt.Println("creating local zip archive...")
+	// fmt.Println("creating local zip archive...")
 	archiveFilePath := config.archiveLocalDir + archBaseName + "_" + request.ArchiveID + ".zip"
 	archive, err := os.Create(archiveFilePath)
 	if err != nil {
@@ -77,9 +95,9 @@ func zipFilesLocal(request archiveRequest) error {
 
 	for i, file := range request.Files {
 
-		fmt.Printf("zipping file %d / %d: %s\n", i+1, len(request.Files), config.sourceLocalDir+file)
 		err := WriteToZipLocal(file, zipWriter)
 		if err != nil {
+			fmt.Printf("\r zipping file %d / %d: %s\n", i+1, len(request.Files), config.sourceLocalDir+file)
 			log.Fatal(err)
 		}
 	}
@@ -98,7 +116,6 @@ func WriteToZipLocal(fileName string, writer *zip.Writer) error {
 	}
 	defer f.Close()
 
-	fmt.Printf("writing file to archive: %s\n", fileName)
 	w, err := writer.Create(fileName)
 	if err != nil {
 		return fmt.Errorf("could not create file in archive: %s", fileName)

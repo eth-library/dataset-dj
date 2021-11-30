@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 
@@ -51,21 +50,13 @@ func subscribeToRedisChannel(rdbClient *redis.Client) {
 	defer subscriber.Close()
 	channel := subscriber.Channel()
 
-	var archRequest archiveRequest
-
 	for msg := range channel {
-		fmt.Println("received", msg.Payload, "from", msg.Channel)
+		// fmt.Println("received ", msg.Payload, " from ", msg.Channel)
 		if msg.Channel == "archives" {
-
-			// convert json string into struct
-			json.Unmarshal([]byte(msg.Payload), &archRequest)
-
-			fmt.Println("handling archRequest: ", archRequest)
-			err := zipFiles(archRequest)
-			if err != nil {
-				fmt.Println("err: ", err)
-			}
-
+			handleArchiveMessage(msg.Payload)
+		}
+		if msg.Channel == "emails" {
+			handleEmailMessage(msg.Payload)
 		}
 	}
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -13,8 +14,43 @@ var (
 	serviceEmailPassword = os.Getenv("EMAIL_PASSWORD")
 )
 
-// send email with download link to user once downloading and zipping of the files is complete
-func sendNotification(request archiveRequest) error {
+func handleEmailMessage(messagePayload string) {
+
+	var archRequest archiveRequest
+
+	// convert json string into struct
+	json.Unmarshal([]byte(messagePayload), &archRequest)
+
+	fmt.Println("handling email task: ", archRequest)
+	err := sendEmail(archRequest)
+	if err != nil {
+		fmt.Println("err: ", err)
+	}
+}
+
+func publishEmailTask(archRequest archiveRequest) error {
+
+	//convert struct to json
+	jsonMessage, err := json.Marshal(archRequest)
+	if err != nil {
+		fmt.Println("error marshalling json: ", err)
+		return err
+	}
+	//publish to channel
+	channelName := "emails"
+	err = rdbClient.Publish(channelName, jsonMessage).Err()
+	if nil != err {
+		fmt.Printf("Publish Error: %s", err.Error())
+		return err
+	}
+
+	fmt.Println("published email task")
+	return nil
+
+}
+
+//sendEmail sends an email with download link to user once downloading and zipping of the files is complete
+func sendEmail(request archiveRequest) error {
 
 	archFile := archBaseName + "_" + request.ArchiveID + ".zip" // name of the zip archive
 
@@ -37,7 +73,7 @@ func sendNotification(request archiveRequest) error {
 	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 	if err := d.DialAndSend(m); err != nil {
-		return fmt.Errorf("an error occured while sending the notification")
+		return fmt.Errorf("an error occured while sending the email notification")
 	}
 	fmt.Println("email sent successfully!")
 
