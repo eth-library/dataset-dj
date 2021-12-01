@@ -87,18 +87,25 @@ func getAvailableFilesGC(c *gin.Context) {
 func inspectArchive(c *gin.Context) {
 	id := c.Param("id") // bind parameter id provided by the gin.Context object
 
+	arch, err := findArchiveInDB(id)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, "archive not found")
+	} else {
+		c.IndentedJSON(http.StatusOK, arch)
+	}
+
 	// Check whether metaArchive exists and if so convert its list of filenames which is internally
 	// saved as a set to a slice such that it can be represented in JSON
-	if arch, ok := archives[id]; ok {
-		c.IndentedJSON(http.StatusOK, struct {
-			ID    string   `json:"id"`
-			Files []string `json:"files"`
-		}{
-			ID:    arch.ID,
-			Files: arch.Files.toSlice()})
-	} else {
-		c.IndentedJSON(http.StatusBadRequest, "archive not found")
-	}
+	// if arch, ok := archives[id]; ok {
+	// 	c.IndentedJSON(http.StatusOK, struct {
+	// 		ID    string   `json:"id"`
+	// 		Files []string `json:"files"`
+	// 	}{
+	// 		ID:    arch.ID,
+	// 		Files: arch.Files.toSlice()})
+	// } else {
+	// 	c.IndentedJSON(http.StatusBadRequest, "archive not found")
+	// }
 }
 
 // handler for the /archive API endpoint that receives an archiveRequest. See archiveRequest for more
@@ -111,29 +118,51 @@ func handleArchive(c *gin.Context) {
 	}
 
 	if request.Email != "" && request.ArchiveID != "" { // Email and ArchiveID set
-		if archive, ok := archives[request.ArchiveID]; ok {
+		archive, err := findArchiveInDB(request.ArchiveID)
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, "archive not found")
+		} else {
 			downloadReq := request
-			downloadReq.Files = archive.Files.toSlice()
+			downloadReq.Files = archive.Files
 			downloadFiles(downloadReq)
 			c.IndentedJSON(http.StatusOK, downloadReq)
-		} else {
-			c.IndentedJSON(http.StatusBadRequest, "archive not found")
-			return
 		}
+
+		// if archive, ok := archives[request.ArchiveID]; ok {
+		// 	downloadReq := request
+		// 	downloadReq.Files = archive.Files.toSlice()
+		// 	downloadFiles(downloadReq)
+		// 	c.IndentedJSON(http.StatusOK, downloadReq)
+		// } else {
+		// 	c.IndentedJSON(http.StatusBadRequest, "archive not found")
+		// 	return
+		// }
+
 	} else if request.ArchiveID != "" && len(request.Files) != 0 { // ArchiveID and Files set, Email empty
-		if archive, ok := archives[request.ArchiveID]; ok {
-			fileSet := setFromSlice(request.Files)
-			archive.Files = setUnion(archive.Files, fileSet)
-			archives[request.ArchiveID] = archive
-			c.IndentedJSON(http.StatusOK, request)
-		} else {
+		archive, err := findArchiveInDB(request.ArchiveID)
+		if err != nil {
 			c.IndentedJSON(http.StatusBadRequest, "archive not found")
-			return
+		} else {
+			fileSet1 := setFromSlice(archive.Files)
+			fileSet2 := setFromSlice(request.Files)
+			unionSet := setUnion(fileSet1, fileSet2)
+			updateFilesOfArchive(request.ArchiveID, unionSet.toSlice())
+			request.Files = unionSet.toSlice()
+			c.IndentedJSON(http.StatusOK, request)
 		}
+
+		// if archive, ok := archives[request.ArchiveID]; ok {
+		// 	fileSet := setFromSlice(request.Files)
+		// 	archive.Files = setUnion(archive.Files, fileSet)
+		// 	archives[request.ArchiveID] = archive
+		// 	c.IndentedJSON(http.StatusOK, request)
+		// } else {
+		// 	c.IndentedJSON(http.StatusBadRequest, "archive not found")
+		// 	return
+		// }
 	} else if request.Email != "" && len(request.Files) != 0 { // Email and Files set, ArchiveID empty
-		// Create new metaArchive with random UID
-		archive := metaArchive{ID: generateToken(), Files: setFromSlice(request.Files)}
-		archives[archive.ID] = archive
+		archive := newMetaArchiveInDB(request.Files)
+		// archives[archive.ID] = archive // Code for local storage inside main memory
 		downloadReq := request
 		downloadReq.ArchiveID = archive.ID
 		downloadFiles(downloadReq)
@@ -141,8 +170,8 @@ func handleArchive(c *gin.Context) {
 
 	} else if len(request.Files) != 0 { // Files set, Email and ArchiveID empty
 		// Create new metaArchive with random UID
-		archive := metaArchive{ID: generateToken(), Files: setFromSlice(request.Files)}
-		archives[archive.ID] = archive
+		archive := newMetaArchiveInDB(request.Files)
+		// archives[archive.ID] = archive // Code for local storage inside main memory
 		request.ArchiveID = archive.ID
 		c.IndentedJSON(http.StatusCreated, request)
 	} else {

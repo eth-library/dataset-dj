@@ -3,10 +3,13 @@ package main
 import (
 	"io/ioutil"
 	"log"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // "Database" for the metaArchives so far
-var archives map[string]metaArchive = make(map[string]metaArchive)
+// var archives map[string]metaArchive = make(map[string]metaArchive)
 
 // file represents metadata about a file, not used so far
 type File struct {
@@ -19,14 +22,26 @@ type File struct {
 // metaArchives are the blueprints for the zip archives that will be created once the user initiates
 // the download process. Files is implemented as a set in order to avoid duplicate files within a
 // metaArchive
+// type metaArchive struct {
+// 	ID    string `json:"id"`
+// 	Files set    `json:"files"`
+// }
 type metaArchive struct {
-	ID    string `json:"id"`
-	Files set    `json:"files"`
+	ID    string   `json:"id"`
+	Files []string `json:"files"`
 }
 
 // a set is a struct with one attribute that are its elements contained within a map
 type set struct {
-	elems map[string]bool
+	elems map[string]bool `json:"elements"`
+}
+
+func (a metaArchive) toBSON() bson.D {
+	var files bson.A
+	for _, v := range a.Files {
+		files = append(files, v)
+	}
+	return bson.D{primitive.E{Key: "_id", Value: a.ID}, primitive.E{Key: "files", Value: files}}
 }
 
 // checks if elem is contained within set s

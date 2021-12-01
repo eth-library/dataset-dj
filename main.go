@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
 	"cloud.google.com/go/storage"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var (
@@ -14,6 +16,8 @@ var (
 	// privateKey    []byte
 	bucket        string          // bucket name used to create bucket handlers
 	storageClient *storage.Client // client used to connect to the storage in order to read and write files
+	mongoClient   *mongo.Client
+	mongoCtx      context.Context
 )
 
 const (
@@ -26,6 +30,7 @@ const (
 func main() {
 	ctx := context.Background()
 	var err error
+	var cancel context.CancelFunc
 
 	bucket = os.Getenv("GCLOUD_STORAGE_BUCKET") // The bucket name is set as an environment variable, see app.yaml file
 	storageClient, err = storage.NewClient(ctx)
@@ -38,6 +43,29 @@ func main() {
 	if port == "" {
 		port = "8080"
 		log.Printf("Defaulting to port %s", port)
+	}
+
+	// Get Client, Context, CalcelFunc and
+	// err from connect method.
+	mongoClient, mongoCtx, cancel, err = connectToMDB("mongodb+srv://data-dj:LibLab123@archive-cluster.jzmhu.mongodb.net/data-dj-main?retryWrites=true&w=majority")
+	if err != nil {
+		panic(err)
+	}
+
+	// Release resource when the main
+	// function is returned.
+	defer closeMDB(mongoClient, mongoCtx, cancel)
+
+	// Ping mongoDB with Ping method
+	err = pingMDB(mongoClient, ctx)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// Load the list of already used archiveIDs when redeploying
+	archiveIDs, err = loadArchiveIDs()
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	router := gin.Default()
