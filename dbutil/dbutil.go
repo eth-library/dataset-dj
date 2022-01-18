@@ -183,8 +183,8 @@ func AddArchiveToDB(client *mongo.Client, ctx context.Context, archive MetaArchi
 	}
 }
 
-// funciton for retrieving an archive from the MongoDB
-func FindArchiveInDB(client *mongo.Client, ctx context.Context, id string) (MetaArchive, error) {
+// FindArchiveInDB retrieves an archive from the MongoDB
+func FindArchiveInDB(ctx context.Context, client *mongo.Client, id string) (MetaArchive, error) {
 	var archive MetaArchive
 	collection := client.Database("data-dj-main").Collection("archives")
 	err := collection.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", id}}}}).Decode(&archive)
@@ -192,9 +192,9 @@ func FindArchiveInDB(client *mongo.Client, ctx context.Context, id string) (Meta
 	return archive, err
 }
 
-// This methods accepts client, context, database, collection, filter and update filter
+//UpdateFilesOfArchive accepts client, context, database, collection, filter and update filter
 // and update is of type interface this method returns UpdateResult and an error if any.
-func UpdateFilesOfArchive(client *mongo.Client, ctx context.Context, id string, update interface{}) (*mongo.UpdateResult, error) {
+func UpdateFilesOfArchive(ctx context.Context, client *mongo.Client, id string, update interface{}) (*mongo.UpdateResult, error) {
 
 	// select the database and the collection
 	collection := client.Database("data-dj-main").Collection("archives")
@@ -206,32 +206,45 @@ func UpdateFilesOfArchive(client *mongo.Client, ctx context.Context, id string, 
 	return result, err
 }
 
-// function that updates the list of archiveIDs
-func UpdateArchiveIDs(client *mongo.Client, ctx context.Context, update interface{}) (*mongo.UpdateResult, error) {
+//UpdateArchiveIDs updates the list of archiveIDs in the DB
+func UpdateArchiveIDs(ctx context.Context, client *mongo.Client, update interface{}) (*mongo.UpdateResult, error) {
 	collection := client.Database("data-dj-main").Collection("archiveIDs")
 
 	result, err := collection.UpdateByID(ctx, "id-file", bson.M{"$set": bson.M{"ids": update}})
 	return result, err
 }
 
-// function for retrieving list of archiveIDs
-func LoadArchiveIDs(client *mongo.Client, ctx context.Context) (datastructs.Set, error) {
+//LoadArchiveIDs retrieves a list of archiveIDs from the database
+func LoadArchiveIDs(ctx context.Context, client *mongo.Client) (datastructs.Set, error) {
 	var idStruct idFileWrapper
+	var archiveIDs datastructs.Set
+
 	col := client.Database("data-dj-main").Collection("archiveIDs")
 	err := col.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", "id-file"}}}}).Decode(&idStruct)
-	return datastructs.SetFromSlice(idStruct.Ids), err
+	if err != nil {
+		if errText := "mongo: no documents in result"; err.Error() == errText {
+			emptySlice := make([]string, 0)
+			archiveIDs = datastructs.SetFromSlice(emptySlice)
+			err = nil
+			log.Println("WARNING: no existing ArchiveIDs, initialising empty slice")
+		} else {
+			log.Println("LoadArchiveIDs error: ", err)
+		}
+	}
+	archiveIDs = datastructs.SetFromSlice(idStruct.Ids)
+	return archiveIDs, err
 }
 
-// function for retrieving list of archiveIDs
-func LoadSourceBuckets(client *mongo.Client, ctx context.Context) ([]SourceBucket, error) {
+//LoadSourceBuckets retrieves a list of archiveIDs from the db
+func LoadSourceBuckets(ctx context.Context, client *mongo.Client) ([]SourceBucket, error) {
 	var sourceStruct bucketFileWrapper
 	col := client.Database("data-dj-main").Collection("sourceBuckets")
 	err := col.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", "bucket-file"}}}}).Decode(&sourceStruct)
 	return sourceStruct.buckets, err
 }
 
-// function that updates the list of archiveIDs
-func UpdateSourceBuckets(client *mongo.Client, ctx context.Context, update interface{}) (*mongo.UpdateResult, error) {
+//UpdateSourceBuckets updates the list of archiveIDs in the DB
+func UpdateSourceBuckets(ctx context.Context, client *mongo.Client, update interface{}) (*mongo.UpdateResult, error) {
 	collection := client.Database("data-dj-main").Collection("sourceBuckets")
 
 	result, err := collection.UpdateByID(ctx, "bucket-file", bson.M{"$set": bson.M{"buckets": update}})

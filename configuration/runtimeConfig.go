@@ -50,19 +50,19 @@ func InitRuntimeConfig(sc *ServerConfig) *RuntimeConfig {
 	// Ping mongoDB with Ping method
 	err = dbutil.PingMDB(mongoClient, ctx)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("error PingMDB: ", err)
 	}
 
 	// Load the list of already used archiveIDs when redeploying
-	archiveIDs, err := dbutil.LoadArchiveIDs(mongoClient, mongoCtx)
+	archiveIDs, err := dbutil.LoadArchiveIDs(mongoCtx, mongoClient)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	sourceBucketList, err := dbutil.LoadSourceBuckets(mongoClient, mongoCtx)
+	sourceBucketList, err := dbutil.LoadSourceBuckets(mongoCtx, mongoClient)
 	sourceBuckets := dbutil.BucketMapfromSlice(sourceBucketList)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("WARNING: no sourceBucketList found: ", err)
 	}
 
 	rc := RuntimeConfig{

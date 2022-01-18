@@ -47,7 +47,7 @@ func getAvailableFiles(c *gin.Context) {
 func inspectArchive(c *gin.Context) {
 	id := c.Param("id") // bind parameter id provided by the gin.Context object
 
-	arch, err := dbutil.FindArchiveInDB(runfig.MongoClient, runfig.MongoCtx, id)
+	arch, err := dbutil.FindArchiveInDB(runfig.MongoCtx, runfig.MongoClient, id)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, "archive not found")
 	} else {
@@ -86,7 +86,7 @@ func handleArchive(c *gin.Context) {
 	}
 
 	if request.Email != "" && request.ArchiveID != "" { // Email and ArchiveID set
-		archive, err := dbutil.FindArchiveInDB(runfig.MongoClient, runfig.MongoCtx, request.ArchiveID)
+		archive, err := dbutil.FindArchiveInDB(runfig.MongoCtx, runfig.MongoClient, request.ArchiveID)
 		if err != nil {
 			c.IndentedJSON(http.StatusBadRequest, "archive not found")
 		} else {
@@ -113,13 +113,13 @@ func handleArchive(c *gin.Context) {
 		// }
 
 	} else if request.ArchiveID != "" && len(request.Files) != 0 { // ArchiveID and Files set, Email empty
-		archive, err := dbutil.FindArchiveInDB(runfig.MongoClient, runfig.MongoCtx, request.ArchiveID)
+		archive, err := dbutil.FindArchiveInDB(runfig.MongoCtx, runfig.MongoClient, request.ArchiveID)
 		if err != nil {
 			c.IndentedJSON(http.StatusBadRequest, "archive not found")
 		} else {
 			fileSet := datastructs.SetFromSlice(request.Files)
 			unionSet := datastructs.SetUnion(fileSet, archive.Files)
-			dbutil.UpdateFilesOfArchive(runfig.MongoClient, runfig.MongoCtx, request.ArchiveID, unionSet.ToSlice())
+			dbutil.UpdateFilesOfArchive(runfig.MongoCtx, runfig.MongoClient, request.ArchiveID, unionSet.ToSlice())
 			request.Files = unionSet.ToSlice()
 			c.IndentedJSON(http.StatusOK, request)
 		}
