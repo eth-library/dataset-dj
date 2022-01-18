@@ -1,4 +1,4 @@
-module github.com/eth-library-lab/dataset-dj/api
+module github.com/eth-library-lab/dataset-dj
 
 go 1.17
 
@@ -7,12 +7,20 @@ require (
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/google/uuid v1.3.0
-	go.mongodb.org/mongo-driver v1.8.0
-	google.golang.org/api v0.61.0
+	go.mongodb.org/mongo-driver v1.8.2
+	google.golang.org/api v0.63.0
+	gopkg.in/mail.v2 v2.3.1
+)
+
+replace (
+	github.com/eth-library-lab/dataset-dj v0.0.0 => /Users/magnuswuttke/coding/go/datadj
+	github.com/eth-library-lab/dataset-dj/configuration v0.0.0 => /Users/magnuswuttke/coding/datadj
+	github.com/eth-library-lab/dataset-dj/datastructs v0.0.0 => /Users/magnuswuttke/coding/go/datadj
+	github.com/eth-library-lab/dataset-dj/dbutil v0.0.0 => /Users/magnuswuttke/coding/go/datadj
 )
 
 require (
-	cloud.google.com/go v0.97.0 // indirect
+	cloud.google.com/go v0.99.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403 // indirect
@@ -48,12 +56,13 @@ require (
 	golang.org/x/net v0.0.0-20210503060351-7fd8e65b6420 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881 // indirect
+	golang.org/x/sys v0.0.0-20211210111614-af8b64212486 // indirect
 	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20211118181313-81c1377c94b1 // indirect
-	google.golang.org/grpc v1.40.0 // indirect
+	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
+	google.golang.org/grpc v1.40.1 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
+	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

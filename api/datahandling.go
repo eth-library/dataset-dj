@@ -1,13 +1,19 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"io/ioutil"
+	"log"
 	"net/mail"
+	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"cloud.google.com/go/storage"
+	conf "github.com/eth-library-lab/dataset-dj/configuration"
+	"google.golang.org/api/iterator"
 )
 
-// "Database" for the metaArchives so far
+// simple "Database" for the metaArchives
 // var archives map[string]metaArchive = make(map[string]metaArchive)
 
 // File represents metadata about a file, not used so far
@@ -18,102 +24,24 @@ type File struct {
 	Size     int32  `json:"size"`
 }
 
-// metaArchives are the blueprints for the zip archives that will be created once the user initiates
-// the download process. Files is implemented as a set in order to avoid duplicate files within a
-// metaArchive
-// type metaArchive struct {
-// 	ID    string `json:"id"`
-// 	Files set    `json:"files"`
-// }
-type metaArchive struct {
-	ID          string `json:"id"`
-	Files       set    `json:"files"`
-	TimeCreated string `json:"timeCreated"`
-	TimeUpdated string `json:"timeUpdated"`
-	Status      string `json:"status"`
-	Source      string `json:"source"`
-}
-
-// a set is a struct with one attribute that are its elements contained within a map
-type set struct {
-	elems map[string]bool `json:"elements"`
-}
-
-func (a metaArchive) toBSON() bson.D {
-	var files bson.A
-	for _, v := range a.Files.toSlice() {
-		files = append(files, v)
-	}
-	return bson.D{primitive.E{Key: "_id", Value: a.ID}, primitive.E{Key: "files", Value: files}}
-}
-
+// checks whether an email address is of a valid format or not
 func emailIsValid(email string) bool {
 	_, err := mail.ParseAddress(email)
 	return err == nil
 }
 
-// checks if elem is contained within set s
-func (s set) Check(elem string) bool {
-	return s.elems[elem]
-}
-
-// adds elem to set s
-func (s set) Add(elem string) {
-	s.elems[elem] = true
-}
-
-// deletes elem from set s
-func (s set) Del(elem string) {
-	delete(s.elems, elem)
-}
-
-// replace the elements of a set by the contents of a slice
-func (s set) SetElemsFromSlice(slice []string) {
-	s.elems = map[string]bool{}
-	for _, e := range slice {
-		s.elems[e] = true
-	}
-}
-
-// return the elements of a set as a slice
-func (s set) toSlice() []string {
-	slice := []string{}
-	for e := range s.elems {
-		slice = append(slice, e)
-	}
-	return slice
-}
-
-// create a set from a slice
-func setFromSlice(slice []string) set {
-	s := set{elems: map[string]bool{}}
-	for _, e := range slice {
-		s.elems[e] = true
-	}
-	return s
-}
-
-// return a new set as the union of two sets
-func setUnion(s1, s2 set) set {
-	newSet := set{elems: map[string]bool{}}
-	for e := range s1.elems {
-		newSet.elems[e] = true
-	}
-	for e := range s2.elems {
-		newSet.elems[e] = true
-	}
-	return newSet
-}
-
+// retrieve file names from local storage, from cloud storage and also from storages that
+// are connected via API. This function acts as layer of abstraction such that the function
+// calls in handlers.go don't need to be modified.
 func retrieveAllFiles() ([]string, error) {
 	var allAvailableFiles []string
-	localFiles, err := retrieveFilesLocal(config.sourceLocalDir)
+	localFiles, err := retrieveFilesLocal(config.SourceLocalDir)
 	if err != nil {
 		return nil, err
 	}
 	allAvailableFiles = append(allAvailableFiles, localFiles...)
 
-	cloudFiles, err := retrieveFilesCloud(storageClient, config)
+	cloudFiles, err := retrieveFilesCloud(runfig.StorageClient, config)
 	if err != nil {
 		return allAvailableFiles, err
 	}
@@ -125,4 +53,69 @@ func retrieveAllFiles() ([]string, error) {
 	}
 	allAvailableFiles = append(allAvailableFiles, apiFiles...)
 	return allAvailableFiles, nil
+}
+
+// retrieve file names from local storage (a directory that may be accessed directly)
+func retrieveFilesLocal(localSourceDir string) ([]string, error) {
+	return listFileDir(localSourceDir)
+}
+
+// retrieve file names from cloud storage (google cloud bucket)
+func retrieveFilesCloud(client *storage.Client, config *conf.ServerConfig) ([]string, error) {
+	ctx := context.Background()
+	var cloudFiles []string
+
+	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+
+	// get bucket handler and obtain an iterator over all objects returned by query
+
+	bucket := client.Bucket(config.SourceBucketName)
+
+	it := bucket.Objects(ctx, &storage.Query{
+		Prefix: config.SourceBucketPrefix,
+	})
+
+	// Loop over all objects returned by the query
+	for {
+		attrs, err := it.Next()
+		if err != nil {
+			return nil, fmt.Errorf("an error occured while retrieving a file from the cloud storage")
+		}
+
+		if err == iterator.Done {
+			break
+		}
+
+		if attrs.Name == config.SourceBucketPrefix { // make sure the directory is not listed as available file
+			continue
+		}
+		cloudFiles = append(cloudFiles, "cloud/"+attrs.Name)
+	}
+	return cloudFiles, nil
+}
+
+// retrieve file names from storages connected via API (not defined yet)
+func retriveFilesAPI() ([]string, error) {
+	return []string{}, nil
+}
+
+// list names of files in the given directory
+func listFileDir(dirPath string) ([]string, error) {
+
+	files, err := ioutil.ReadDir(dirPath)
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+
+	var filenames []string
+
+	for _, file := range files {
+		filenames = append(filenames, "local/"+file.Name())
+		//print filename and if its a direcory
+		// fmt.Println(file.Name(), file.IsDir())
+	}
+
+	return filenames, nil
 }

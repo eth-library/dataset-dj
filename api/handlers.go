@@ -6,6 +6,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/eth-library-lab/dataset-dj/datastructs"
+	"github.com/eth-library-lab/dataset-dj/dbutil"
+	"github.com/eth-library-lab/dataset-dj/redisutil"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -26,7 +30,6 @@ type archiveRequest struct {
 	Email     string   `json:"email"`
 	ArchiveID string   `json:"archiveID"`
 	Files     []string `json:"files"`
-	Source    string   `json:"source"`
 }
 
 func getAvailableFiles(c *gin.Context) {
@@ -44,7 +47,7 @@ func getAvailableFiles(c *gin.Context) {
 func inspectArchive(c *gin.Context) {
 	id := c.Param("id") // bind parameter id provided by the gin.Context object
 
-	arch, err := findArchiveInDB(id)
+	arch, err := dbutil.FindArchiveInDB(runfig.MongoClient, runfig.MongoCtx, id)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, "archive not found")
 	} else {
@@ -83,14 +86,14 @@ func handleArchive(c *gin.Context) {
 	}
 
 	if request.Email != "" && request.ArchiveID != "" { // Email and ArchiveID set
-		archive, err := findArchiveInDB(request.ArchiveID)
+		archive, err := dbutil.FindArchiveInDB(runfig.MongoClient, runfig.MongoCtx, request.ArchiveID)
 		if err != nil {
 			c.IndentedJSON(http.StatusBadRequest, "archive not found")
 		} else {
 			archiveTask := request
-			archiveTask.Files = archive.Files.toSlice()
+			archiveTask.Files = archive.Files.ToSlice()
 
-			err := publishArchiveTask(archiveTask)
+			err := redisutil.PublishArchiveTask(runfig.RdbClient, archiveTask)
 			if err != nil {
 				fmt.Println("error publishing archive task", err)
 				c.IndentedJSON(http.StatusInternalServerError, "could not request archive download")
@@ -110,14 +113,14 @@ func handleArchive(c *gin.Context) {
 		// }
 
 	} else if request.ArchiveID != "" && len(request.Files) != 0 { // ArchiveID and Files set, Email empty
-		archive, err := findArchiveInDB(request.ArchiveID)
+		archive, err := dbutil.FindArchiveInDB(runfig.MongoClient, runfig.MongoCtx, request.ArchiveID)
 		if err != nil {
 			c.IndentedJSON(http.StatusBadRequest, "archive not found")
 		} else {
-			fileSet := setFromSlice(request.Files)
-			unionSet := setUnion(fileSet, archive.Files)
-			updateFilesOfArchive(request.ArchiveID, unionSet.toSlice())
-			request.Files = unionSet.toSlice()
+			fileSet := datastructs.SetFromSlice(request.Files)
+			unionSet := datastructs.SetUnion(fileSet, archive.Files)
+			dbutil.UpdateFilesOfArchive(runfig.MongoClient, runfig.MongoCtx, request.ArchiveID, unionSet.ToSlice())
+			request.Files = unionSet.ToSlice()
 			c.IndentedJSON(http.StatusOK, request)
 		}
 
@@ -132,25 +135,22 @@ func handleArchive(c *gin.Context) {
 		// }
 	} else if request.Email != "" && len(request.Files) != 0 { // Email and Files set, ArchiveID empty
 
-		if request.Source == "" {
-			request.Source = "cloud"
-		}
 		// Create new metaArchive with random UID
-		newArchive := metaArchive{
+		newArchive := dbutil.MetaArchive{
 			ID:          generateToken(),
-			Files:       setFromSlice(request.Files),
+			Files:       datastructs.SetFromSlice(request.Files),
 			TimeCreated: time.Now().String(),
 			TimeUpdated: "",
 			Status:      "opened",
 			Source:      "local",
 		}
 
-		addArchiveToDB(newArchive)
+		dbutil.AddArchiveToDB(runfig.MongoClient, runfig.MongoCtx, newArchive)
 
 		archiveTask := request
 		archiveTask.ArchiveID = newArchive.ID
 
-		err := publishArchiveTask(archiveTask)
+		err := redisutil.PublishArchiveTask(runfig.RdbClient, archiveTask)
 		if err != nil {
 			fmt.Println("error publishing archive task", err)
 			c.IndentedJSON(http.StatusInternalServerError, "could not request archive creation")
@@ -161,21 +161,37 @@ func handleArchive(c *gin.Context) {
 	} else if len(request.Files) != 0 { // Files set, Email and ArchiveID empty
 
 		// Create new metaArchive with random UID
-		newArchive := metaArchive{
+		newArchive := dbutil.MetaArchive{
 			ID:          generateToken(),
-			Files:       setFromSlice(request.Files),
+			Files:       datastructs.SetFromSlice(request.Files),
 			TimeCreated: time.Now().String(),
 			TimeUpdated: "",
 			Status:      "opened",
 			Source:      "local",
 		}
 
-		addArchiveToDB(newArchive)
+		dbutil.AddArchiveToDB(runfig.MongoClient, runfig.MongoCtx, newArchive)
 
 		c.IndentedJSON(http.StatusCreated, newArchive)
 	} else {
 		c.IndentedJSON(http.StatusBadRequest, "invalid request format")
 	}
+}
+
+func addSourceBucket(c *gin.Context) {
+	var bucket dbutil.SourceBucket
+
+	if err := c.BindJSON(&bucket); err != nil {
+		return
+	}
+
+	err := redisutil.PublishSourceBucketTask(runfig.RdbClient, bucket)
+	if err != nil {
+		fmt.Println("error publishing source bucket task", err)
+		c.IndentedJSON(http.StatusInternalServerError, "could not request source bucket creation")
+		return
+	}
+	c.IndentedJSON(http.StatusOK, bucket)
 }
 
 // handler for a simple healthCheck API that verifies if the service is alive / running

@@ -4,14 +4,8 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"os"
 
 	gomail "gopkg.in/mail.v2"
-)
-
-var (
-	serviceEmailAddress  = os.Getenv("EMAIL_ADDRESS")
-	serviceEmailPassword = os.Getenv("EMAIL_PASSWORD")
 )
 
 func handleEmailMessage(messagePayload string) {
@@ -38,7 +32,7 @@ func publishEmailTask(archRequest archiveRequest) error {
 	}
 	//publish to channel
 	channelName := "emails"
-	err = rdbClient.Publish(channelName, jsonMessage).Err()
+	err = runfig.RdbClient.Publish(channelName, jsonMessage).Err()
 	if nil != err {
 		fmt.Printf("Publish Error: %s", err.Error())
 		return err
@@ -59,17 +53,17 @@ func sendEmail(request archiveRequest) error {
 	for _, name := range request.Files {
 		content = content + name + "\n"
 	}
-	content = content + "\nThe archive can be retrieved from:\n" + config.archiveBaseURL + config.archiveBucketPrefix + archFile + "\n\nYours truly,\n\nThe DataDJ\n"
+	content = content + "\nThe archive can be retrieved from:\n" + config.ArchiveBaseURL + config.ArchiveBucketPrefix + archFile + "\n\nYours truly,\n\nThe DataDJ\n"
 
 	// create new email message
 	m := gomail.NewMessage()
 
-	m.SetHeader("From", serviceEmailAddress)
+	m.SetHeader("From", config.ServiceEmailAddress)
 	m.SetHeader("To", request.Email)
 	m.SetHeader("Subject", "DataDJ Download completed")
 	m.SetBody("text/plain", content)
 
-	d := gomail.NewDialer("smtp.gmail.com", 587, serviceEmailAddress, serviceEmailPassword)
+	d := gomail.NewDialer("smtp.gmail.com", 587, config.ServiceEmailAddress, config.ServiceEmailPassword)
 	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 	if err := d.DialAndSend(m); err != nil {
