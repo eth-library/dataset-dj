@@ -18,6 +18,7 @@ type RuntimeConfig struct {
 	RdbClient        *redis.Client
 	MongoClient      *mongo.Client
 	MongoCtx         context.Context
+	CtxCancel        context.CancelFunc
 	ArchiveIDs       datastructs.Set
 	SourceBucketList []dbutil.SourceBucket
 	SourceBuckets    map[string]dbutil.SourceBucket
@@ -43,10 +44,6 @@ func InitRuntimeConfig(sc *ServerConfig) *RuntimeConfig {
 		panic(err)
 	}
 
-	// Release resource when the main
-	// function is returned.
-	defer dbutil.CloseMDB(mongoClient, mongoCtx, cancel)
-
 	// Ping mongoDB with Ping method
 	err = dbutil.PingMDB(mongoClient, ctx)
 	if err != nil {
@@ -70,6 +67,7 @@ func InitRuntimeConfig(sc *ServerConfig) *RuntimeConfig {
 		RdbClient:        rdbClient,
 		MongoClient:      mongoClient,
 		MongoCtx:         mongoCtx,
+		CtxCancel:        cancel,
 		ArchiveIDs:       archiveIDs,
 		SourceBucketList: sourceBucketList,
 		SourceBuckets:    sourceBuckets}

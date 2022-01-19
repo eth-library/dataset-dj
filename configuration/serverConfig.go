@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-// serverConfig holds all of the deployment specific environment variables and settings
+// ServerConfig holds all of the deployment specific environment variables and settings
 // it gets initialised by a function and should be globally accessible
 type ServerConfig struct {
 	ProjectID            string // google cloud project-id that contains bucket resources
@@ -26,7 +26,7 @@ type ServerConfig struct {
 	ServiceEmailPassword string // password for email address
 }
 
-//initServerConfig initiliases the serverConfig struct with all of the environment variables
+//InitServerConfig initiliases the serverConfig struct with all of the environment variables
 func InitServerConfig() *ServerConfig {
 	cfg := ServerConfig{
 		ProjectID:            os.Getenv("PROJECT_ID"),            // for example: "data-dj-2021

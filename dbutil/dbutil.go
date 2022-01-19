@@ -3,6 +3,7 @@ package dbutil
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/eth-library-lab/dataset-dj/datastructs"
 	"go.mongodb.org/mongo-driver/bson"
@@ -85,6 +86,7 @@ type idFileWrapper struct {
 // This method closes mongoDB connection and cancel context.
 func CloseMDB(client *mongo.Client, ctx context.Context, cancel context.CancelFunc) {
 
+	fmt.Println("closing DB")
 	// CancelFunc to cancel to context
 	defer cancel()
 
@@ -134,10 +136,10 @@ func PingMDB(client *mongo.Client, ctx context.Context) error {
 	return nil
 }
 
-// insertOne is a user defined method, used to insert
+// InsertOne is a user defined method, used to insert
 // documents into collection returns result of InsertOne
 // and error if any.
-func InsertOne(client *mongo.Client, ctx context.Context, dataBase, col string,
+func InsertOne(ctx context.Context, client *mongo.Client, dataBase, col string,
 	doc interface{}) (*mongo.InsertOneResult, error) {
 
 	// select database and collection ith Client.Database method
@@ -150,10 +152,10 @@ func InsertOne(client *mongo.Client, ctx context.Context, dataBase, col string,
 	return result, err
 }
 
-// insertMany is a user defined method, used to insert
+// InsertMany is a user defined method, used to insert
 // documents into collection returns result of
 // InsertMany and error if any.
-func InsertMany(client *mongo.Client, ctx context.Context, dataBase, col string,
+func InsertMany(ctx context.Context, client *mongo.Client, dataBase, col string,
 	docs []interface{}) (*mongo.InsertManyResult, error) {
 
 	// select database and collection ith Client.Database
@@ -166,16 +168,16 @@ func InsertMany(client *mongo.Client, ctx context.Context, dataBase, col string,
 	return result, err
 }
 
-func NewMetaArchiveInDB(client *mongo.Client, ctx context.Context, id string, files []string) MetaArchive {
+func NewMetaArchiveInDB(ctx context.Context, client *mongo.Client, id string, files []string) MetaArchive {
 	// Create new metaArchive with random UID
 	archive := MetaArchive{ID: id, Files: datastructs.SetFromSlice(files)}
-	AddArchiveToDB(client, ctx, archive)
+	AddArchiveToDB(ctx, client, archive)
 	return archive
 }
 
-func AddArchiveToDB(client *mongo.Client, ctx context.Context, archive MetaArchive) {
+func AddArchiveToDB(ctx context.Context, client *mongo.Client, archive MetaArchive) {
 	archiveBSON := archive.ToBSON()
-	result, err := InsertOne(client, ctx, "data-dj-main", "archives", archiveBSON)
+	result, err := InsertOne(ctx, client, "data-dj-main", "archives", archiveBSON)
 	if err != nil {
 		fmt.Println(err)
 	} else {

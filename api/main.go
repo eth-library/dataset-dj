@@ -2,6 +2,7 @@ package main
 
 import (
 	conf "github.com/eth-library-lab/dataset-dj/configuration"
+	"github.com/eth-library-lab/dataset-dj/dbutil"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,6 +15,10 @@ func main() {
 
 	config = conf.InitServerConfig()
 	runfig = conf.InitRuntimeConfig(config)
+
+	// Release db resource when the main
+	// function is returned.
+	defer dbutil.CloseMDB(runfig.MongoClient, runfig.MongoCtx, runfig.CtxCancel)
 
 	router := gin.Default()
 	router.GET("/files", getAvailableFiles)

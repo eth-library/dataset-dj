@@ -145,7 +145,7 @@ func handleArchive(c *gin.Context) {
 			Source:      "local",
 		}
 
-		dbutil.AddArchiveToDB(runfig.MongoClient, runfig.MongoCtx, newArchive)
+		dbutil.AddArchiveToDB(runfig.MongoCtx, runfig.MongoClient, newArchive)
 
 		archiveTask := request
 		archiveTask.ArchiveID = newArchive.ID
@@ -170,7 +170,7 @@ func handleArchive(c *gin.Context) {
 			Source:      "local",
 		}
 
-		dbutil.AddArchiveToDB(runfig.MongoClient, runfig.MongoCtx, newArchive)
+		dbutil.AddArchiveToDB(runfig.MongoCtx, runfig.MongoClient, newArchive)
 
 		c.IndentedJSON(http.StatusCreated, newArchive)
 	} else {
