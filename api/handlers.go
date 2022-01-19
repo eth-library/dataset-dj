@@ -1,11 +1,9 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/eth-library-lab/dataset-dj/datastructs"
@@ -32,10 +30,6 @@ type archiveRequest struct {
 	Email     string   `json:"email"`
 	ArchiveID string   `json:"archiveID"`
 	Files     []string `json:"files"`
-}
-
-type authHeader struct {
-	Authorization string `header:"Authorization"`
 }
 
 func getAvailableFiles(c *gin.Context) {
@@ -205,36 +199,4 @@ func healthCheck(c *gin.Context) {
 	msg := "The service is running and has received the healthCheck request"
 	fmt.Println(msg)
 	c.IndentedJSON(http.StatusOK, msg)
-}
-
-func getTokenFromHeader(c *gin.Context) (string, error) {
-	h := authHeader{}
-	if err := c.ShouldBindHeader(&h); err != nil {
-		return "", errors.New("Must include Authorization header with format `Bearer {token}`")
-	}
-	parts := strings.Split(h.Authorization, "Bearer ")
-	if len(parts) != 2 {
-		return "", errors.New("Must include Authorization header with format `Bearer {token}`")
-	}
-	return strings.TrimSpace(parts[1]), nil
-}
-
-func handleValidateAPIToken(c *gin.Context) {
-
-	token, err := getTokenFromHeader(c)
-	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	if token == "" {
-		c.IndentedJSON(http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	res := validateAPIToken(runfig.MongoCtx, runfig.MongoClient, token)
-	if res == false {
-		c.IndentedJSON(http.StatusUnauthorized, "invalid Bearer Token")
-	} else {
-		c.IndentedJSON(http.StatusOK, "Bearer Token validated successfully")
-	}
 }

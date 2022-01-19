@@ -26,8 +26,9 @@ func main() {
 	router.POST("/archive", handleArchive)
 	router.GET("/check", healthCheck)
 	router.POST("/addSourceBucket", addSourceBucket)
-	router.GET("/key", handleTokenRequest)
-	router.POST("/key", handleValidateAPIToken)
-	router.Run("0.0.0.0:" + config.Port) // bind to 0.0.0.0 to receive requests from outside docker container
+	router.GET("/key/create", createTokenHandler)
+	router.GET("/key/replace", AuthMiddleware(), replaceToken)
+	router.GET("/key/validate", handleValidateAPIToken) //temporary, for debug purposes
+	router.Run("0.0.0.0:" + config.Port)                // bind to 0.0.0.0 to receive requests from outside docker container
 
 }
