@@ -11,7 +11,7 @@ var (
 	runfig *conf.RuntimeConfig
 )
 
-func main() {
+func setupRouter() *gin.Engine {
 
 	config = conf.InitServerConfig()
 	runfig = conf.InitRuntimeConfig(config)
@@ -29,6 +29,12 @@ func main() {
 	router.GET("/key/create", createTokenHandler)
 	router.GET("/key/replace", AuthMiddleware(), replaceToken)
 	router.GET("/key/validate", handleValidateAPIToken) //temporary, for debug purposes
-	router.Run("0.0.0.0:" + config.Port)                // bind to 0.0.0.0 to receive requests from outside docker container
+	return router
+}
+
+func main() {
+
+	router := setupRouter()
+	router.Run("0.0.0.0:" + config.Port) // bind to 0.0.0.0 to receive requests from outside docker container
 
 }
