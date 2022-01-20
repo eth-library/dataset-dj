@@ -88,7 +88,7 @@ func createTokenHandler(c *gin.Context) {
 
 func createToken(ctx context.Context, client *mongo.Client) (string, error) {
 
-	newToken := "sk_" + generateAPIToken(16)
+	newToken := generateAPIToken()
 	hashedToken := hashAPIToken(newToken)
 
 	newAPIKey := APIKey{
@@ -157,14 +157,14 @@ func handleValidateAPIToken(c *gin.Context) {
 	}
 }
 
-func generateAPIToken(length int) string {
-
+func generateAPIToken() string {
+	length := 16
 	b := make([]byte, length)
 	_, err := rand.Read(b)
 	if err != nil {
 		return ""
 	}
-	return hex.EncodeToString(b)
+	return "sk_" + hex.EncodeToString(b)
 }
 
 func hashAPIToken(token string) string {
