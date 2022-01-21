@@ -79,7 +79,7 @@ func handleArchive(c *gin.Context) {
 
 	// validate email format
 	if request.Email != "" {
-		if !emailIsValid(request.Email) {
+		if _, err := emailIsValid(request.Email); err != nil {
 			c.IndentedJSON(http.StatusBadRequest, "invalid email address")
 			return
 		}

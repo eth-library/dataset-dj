@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/mail"
+	"regexp"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -24,10 +25,20 @@ type File struct {
 	Size     int32  `json:"size"`
 }
 
-// checks whether an email address is of a valid format or not
-func emailIsValid(email string) bool {
-	_, err := mail.ParseAddress(email)
-	return err == nil
+//emailIsValid if email is a valid format for a public address
+// returns the parsed address and nil if valid
+// or return an empty string and error if invalid
+func emailIsValid(email string) (string, error) {
+	e, err := mail.ParseAddress(email)
+	if err != nil {
+		return "", err
+	}
+	// check that the address includes a public domain
+	emailRegex := regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
+	if emailRegex.MatchString(e.Address) != true {
+		return "", fmt.Errorf("email address must be public")
+	}
+	return e.Address, nil
 }
 
 // retrieve file names from local storage, from cloud storage and also from storages that
