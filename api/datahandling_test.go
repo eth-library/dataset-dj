@@ -27,15 +27,3 @@ func TestEmailIsValid(t *testing.T) {
 
 	}
 }
-
-//  false
-
-// "john@email.a" false
-
-// "john@email.aabbc" false
-
-// "@email.com" false
-
-// "j@email.ch" true
-
-// "j@e.co.uk" true
