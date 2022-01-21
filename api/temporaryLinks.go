@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	redisutil "github.com/eth-library-lab/dataset-dj/redisutil"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -20,15 +21,66 @@ type singleUseLink struct {
 	OwnerID    int       `bson:"ownerID"`
 }
 
-type tokenResponse struct {
-	APIKey  string
-	Message string
+//EmailRequestBody for binding email field in a a json body
+type EmailRequestBody struct {
+	Email string `json:"email"`
+}
+
+//EmailParts required by the mailHandler to send an email
+type EmailParts struct {
+	To       string
+	Subject  string
+	BodyType string // e.g.: text/plain
+	Body     string
 }
 
 func handleCreateLink(c *gin.Context) {
-	id := createSingleUseLink(runfig.MongoCtx, runfig.MongoClient)
-	url := c.Request.Host + "/key/claim/" + id
-	c.IndentedJSON(http.StatusCreated, url)
+
+	var emailRequestBody EmailRequestBody
+	if err := c.BindJSON(&emailRequestBody); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, "recipient email required")
+		return
+	}
+	email := emailRequestBody.Email
+	email, err := emailIsValid(email)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, "email format not valid")
+		return
+	}
+	//create link
+	linkID := createSingleUseLink(runfig.MongoCtx, runfig.MongoClient)
+	url := c.Request.Host + "/key/claim/" + linkID
+
+	//TO DO: send email to recipient instead of return link
+	err = publishAPILinkEmailTask(url, email)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	c.IndentedJSON(http.StatusCreated, "email with token link sent")
+}
+
+func publishAPILinkEmailTask(url string, recipientEmail string) error {
+
+	content := fmt.Sprintf(`Welcome to the Dataset DJ
+
+below is a single use link that returns a API Key.
+This API Key should be kept secret, and not disclosed to users or client side code.
+
+%v
+
+	`, url)
+
+	emailparts := EmailParts{
+		To:       recipientEmail,
+		Subject:  "DataDJ - Link to claim API Key",
+		BodyType: "text/plain",
+		Body:     content,
+	}
+	err := redisutil.PublishTask(runfig.RdbClient, emailparts, "emails")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return err
 }
 
 func createSingleUseLink(ctx context.Context, client *mongo.Client) string {
@@ -76,8 +128,6 @@ func validateTokenLink(ctx context.Context, client *mongo.Client, linkID string)
 	}
 	return true, nil
 }
-
-
 
 func expireLink(ctx context.Context, client *mongo.Client, linkID string) error {
 
