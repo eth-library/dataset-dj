@@ -29,6 +29,11 @@ type APIKey struct {
 	CreatedDate string `bson:"createdDate,omitempty"`
 }
 
+type tokenResponse struct {
+	APIKey  string
+	Message string
+}
+
 //AuthMiddleware validates the bearer token before
 //allowing the handler to be a called
 func AuthMiddleware() gin.HandlerFunc {
@@ -55,6 +60,21 @@ func AuthMiddleware() gin.HandlerFunc {
 		fmt.Println("Bearer Token validated successfully")
 		c.Next()
 	}
+}
+
+func deleteToken(ctx context.Context, client *mongo.Client, token string) {
+
+	existingHash := hashAPIToken(token)
+
+	collection := client.Database("data-dj-main").Collection("apiKeys")
+	result, err := collection.DeleteOne(
+		ctx,
+		bson.M{"hashedToken": existingHash},
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Deleted %v apiKeys\n", result.DeletedCount)
 }
 
 func setTokenToExpire(ctx context.Context, client *mongo.Client, token string) {
@@ -86,6 +106,28 @@ func createTokenHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, newToken)
 }
 
+func claimKey(c *gin.Context) {
+	linkID := c.Param("id")
+	linkValid, err := validateTokenLink(runfig.MongoCtx, runfig.MongoClient, linkID)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	if linkValid != true {
+		c.IndentedJSON(http.StatusBadRequest, "invalid link")
+		return
+	}
+
+	token, err := createToken(runfig.MongoCtx, runfig.MongoClient)
+	_ = expireLink(runfig.MongoCtx, runfig.MongoClient, linkID)
+
+	resp := tokenResponse{
+		APIKey:  token,
+		Message: "store this API Key securely. It cannot be retrieved again. Do not disclose it to anyone. Use the /key/replace endpoint to replace this key periodically or if it is compromised",
+	}
+	c.IndentedJSON(http.StatusAccepted, resp)
+}
+
 func createToken(ctx context.Context, client *mongo.Client) (string, error) {
 
 	newToken := generateAPIToken()
@@ -97,12 +139,10 @@ func createToken(ctx context.Context, client *mongo.Client) (string, error) {
 		CreatedDate: time.Now().String(),
 	}
 
-	result, err := dbutil.InsertOne(ctx, client, "data-dj-main", "apiKeys", newAPIKey)
+	_, err := dbutil.InsertOne(ctx, client, "data-dj-main", "apiKeys", newAPIKey)
 
 	if err != nil {
 		log.Println(err)
-	} else {
-		fmt.Println("inserted new apiKey ", result.InsertedID)
 	}
 	return newToken, err
 }
@@ -117,9 +157,15 @@ func replaceToken(c *gin.Context) {
 		return
 	}
 	oldToken, err := getTokenFromHeader(c)
-	setTokenToExpire(runfig.MongoCtx, runfig.MongoClient, oldToken)
 
-	c.IndentedJSON(http.StatusOK, newToken)
+	// setTokenToExpire(runfig.MongoCtx, runfig.MongoClient, oldToken)
+	deleteToken(runfig.MongoCtx, runfig.MongoClient, oldToken)
+
+	resp := tokenResponse{
+		APIKey:  newToken,
+		Message: "store this new API Key securely. It cannot be retrieved again. Do not disclose it to anyone. Use the /key/replace endpoint to replace this key periodically or if it is compromised",
+	}
+	c.IndentedJSON(http.StatusOK, resp)
 }
 
 //getTokenFromHeader extracts the token part of the

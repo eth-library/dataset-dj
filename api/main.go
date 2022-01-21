@@ -25,11 +25,13 @@ func setupRouter() *gin.Engine {
 	router.POST("/archive", handleArchive)
 	router.GET("/check", healthCheck)
 	router.POST("/addSourceBucket", addSourceBucket)
-	router.GET("/key/create", createTokenHandler)
 	router.GET("/key/replace", AuthMiddleware(), replaceToken)
-	router.GET("/key/validate", handleValidateAPIToken) //temporary, for debug purposes
-	router.GET("key/createLink", handleCreateLink)      //requires AUTH
 	router.GET("key/claim/:id", claimKey)               //use a link to claim a token
+	router.GET("/key/validate", handleValidateAPIToken) //temporary, for debug purposes
+	//admin endpoints. TO DO add Auth
+	router.GET("/key/create", createTokenHandler)
+	router.POST("key/createLink", handleCreateLink) //TO DO add Auth. for use by admins
+
 	return router
 }
 

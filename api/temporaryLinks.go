@@ -46,8 +46,6 @@ func createSingleUseLink(ctx context.Context, client *mongo.Client) string {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println("result.InsertedID: ", result.InsertedID)
-	fmt.Printf("Type: %T", result.InsertedID)
 
 	oid, ok := result.InsertedID.(primitive.ObjectID)
 	if ok {
@@ -79,27 +77,7 @@ func validateTokenLink(ctx context.Context, client *mongo.Client, linkID string)
 	return true, nil
 }
 
-func claimKey(c *gin.Context) {
-	linkID := c.Param("id")
-	linkValid, err := validateTokenLink(runfig.MongoCtx, runfig.MongoClient, linkID)
-	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, err.Error())
-		return
-	}
-	if linkValid != true {
-		c.IndentedJSON(http.StatusBadRequest, "invalid link")
-		return
-	}
 
-	token, err := createToken(runfig.MongoCtx, runfig.MongoClient)
-	_ = expireLink(runfig.MongoCtx, runfig.MongoClient, linkID)
-
-	resp := tokenResponse{
-		APIKey:  token,
-		Message: "store this API Key securely. It cannot be retrieved again. Do not disclose it to anyone. Use the /key/replace endpoint to replace this key periodically or if it is compromised",
-	}
-	c.IndentedJSON(http.StatusAccepted, resp)
-}
 
 func expireLink(ctx context.Context, client *mongo.Client, linkID string) error {
 
