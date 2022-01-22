@@ -125,6 +125,7 @@ func claimKey(c *gin.Context) {
 		APIKey:  token,
 		Message: "store this API Key securely. It cannot be retrieved again. Do not disclose it to anyone. Use the /key/replace endpoint to replace this key periodically or if it is compromised",
 	}
+	log.Printf("info: APIKey claimed from temp link: %v", linkID)
 	c.IndentedJSON(http.StatusAccepted, resp)
 }
 

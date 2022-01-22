@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -19,6 +20,7 @@ type singleUseLink struct {
 	ExpireAt   time.Time `bson:"expireAt"`   //after this time MongoDB will expire this document
 	Permission string    `bson:"permission"` //purpose that this link has e.g. create createAPIToken
 	OwnerID    int       `bson:"ownerID"`
+	Email      string    `bson:"email"`
 }
 
 //EmailRequestBody for binding email field in a a json body
@@ -47,8 +49,14 @@ func handleCreateLink(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, "email format not valid")
 		return
 	}
+
+	//to prevent duplicates
+	err = deleteExistingLinks(runfig.MongoCtx, runfig.MongoClient, email)
+	if err != nil {
+		log.Println("error deleting existing links: ", err)
+	}
 	//create link
-	linkID := createSingleUseLink(runfig.MongoCtx, runfig.MongoClient)
+	linkID := createSingleUseLink(runfig.MongoCtx, runfig.MongoClient, email)
 	url := c.Request.Host + "/key/claim/" + linkID
 
 	//TO DO: send email to recipient instead of return link
@@ -94,7 +102,7 @@ func publishAPILinkEmailTask(url string, recipientEmail string) error {
 	return err
 }
 
-func createSingleUseLink(ctx context.Context, client *mongo.Client) string {
+func createSingleUseLink(ctx context.Context, client *mongo.Client, email string) string {
 
 	var signUpLink singleUseLink
 
@@ -102,6 +110,7 @@ func createSingleUseLink(ctx context.Context, client *mongo.Client) string {
 		Used:       false,
 		ExpireAt:   time.Now().Add(time.Second * 120), //change this to time.hours in production
 		Permission: "createAPIToken",
+		Email:      email,
 		OwnerID:    1,
 	}
 	collection := client.Database("data-dj-main").Collection("temporaryLinks")
@@ -140,6 +149,22 @@ func validateTokenLink(ctx context.Context, client *mongo.Client, linkID string)
 	return true, nil
 }
 
+//deleteExistingLinks deletes any existing temporaryLinks assosciated with `email`
+// prevents possibility of individual users having multiple valid links
+func deleteExistingLinks(ctx context.Context, client *mongo.Client, email string) error {
+
+	collection := client.Database("data-dj-main").Collection("temporaryLinks")
+	result, err := collection.DeleteMany(
+		ctx,
+		bson.M{"email": email},
+		// bson.D{
+		// 	{"$set", bson.M{"used": true, "expireAt": time.Now()}},
+		// },
+	)
+	fmt.Printf("deleted %v existing temp links\n", result.DeletedCount)
+	return err
+}
+
 func expireLink(ctx context.Context, client *mongo.Client, linkID string) error {
 
 	id, _ := primitive.ObjectIDFromHex(linkID)
@@ -148,7 +173,7 @@ func expireLink(ctx context.Context, client *mongo.Client, linkID string) error 
 		ctx,
 		bson.M{"_id": id},
 		bson.D{
-			{"$set", bson.M{"used": true, "expireAt": time.Now().Add(10)}},
+			{"$set", bson.M{"used": true, "expireAt": time.Now()}},
 		},
 	)
 	fmt.Println(result)
