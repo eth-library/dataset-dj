@@ -61,19 +61,30 @@ func handleCreateLink(c *gin.Context) {
 
 func publishAPILinkEmailTask(url string, recipientEmail string) error {
 
-	content := fmt.Sprintf(`Welcome to the Dataset DJ
+	content := fmt.Sprintf(`
+	<h1>Welcome to the Data DJ</h1>
 
-below is a single use link that returns a API Key.
-This API Key should be kept secret, and not disclosed to users or client side code.
-
-%v
-
-	`, url)
+	<p>Thanks for joining the Data DJ!</p>
+	
+	<p>
+	Below is a <em>single-use</em> link that returns an API Key.
+	This API Key allows your application to authentic with the Data DJ API.
+	<br/>
+	<br/>
+	The Key can only be viewed once. It should be saved somewhere securely (e.g. password manager), not disclosed to users or client side code, and should not be hardcoded or checked into repositories.</p>
+	</p>
+	<p>
+	   <a href="%v" target="_">%v</a> <br/>
+	   (click or copy & paste into your browser)
+	</p>
+	
+	In case of issues, please contact us at contact[at]librarylab.ethz.ch
+	`, url, url)
 
 	emailparts := EmailParts{
 		To:       recipientEmail,
 		Subject:  "DataDJ - Link to claim API Key",
-		BodyType: "text/plain",
+		BodyType: "text/html",
 		Body:     content,
 	}
 	err := redisutil.PublishTask(runfig.RdbClient, emailparts, "emails")
