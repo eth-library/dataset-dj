@@ -52,11 +52,13 @@ func retrieveAllFiles() ([]string, error) {
 	}
 	allAvailableFiles = append(allAvailableFiles, localFiles...)
 
-	cloudFiles, err := retrieveFilesCloud(runfig.StorageClient, config)
-	if err != nil {
-		return allAvailableFiles, err
+	if len(runfig.SourceBucketList) > 0 {
+		cloudFiles, err := retrieveFilesCloud(runfig.StorageClient, config)
+		if err != nil {
+			return allAvailableFiles, err
+		}
+		allAvailableFiles = append(allAvailableFiles, cloudFiles...)
 	}
-	allAvailableFiles = append(allAvailableFiles, cloudFiles...)
 
 	apiFiles, err := retriveFilesAPI()
 	if err != nil {

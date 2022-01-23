@@ -60,6 +60,9 @@ func InitRuntimeConfig(sc *ServerConfig) *RuntimeConfig {
 	sourceBuckets := dbutil.BucketMapfromSlice(sourceBucketList)
 	if err != nil {
 		log.Println("WARNING: no sourceBucketList found: ", err)
+		// init as empty slices and maps to avoid nil pointer errors
+		sourceBucketList = []dbutil.SourceBucket{}
+		sourceBuckets = map[string]dbutil.SourceBucket{}
 	}
 
 	rc := RuntimeConfig{
