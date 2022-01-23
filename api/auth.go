@@ -25,8 +25,8 @@ type authHeader struct {
 //APIKey is the format of the mongodb document that stores the keys
 type APIKey struct {
 	HashedToken string `bson:"hashedToken,omitempty"`
-	OwnerID     int32  `bson:"ownerId,omitempty"`
 	CreatedDate string `bson:"createdDate,omitempty"`
+	Permission  string `bson:"permission,omitempty"` //service, user or admin
 }
 
 type tokenResponse struct {
@@ -36,7 +36,7 @@ type tokenResponse struct {
 
 //AuthMiddleware validates the bearer token before
 //allowing the handler to be a called
-func AuthMiddleware() gin.HandlerFunc {
+func AuthMiddleware(requiredPermission string) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		token, err := getTokenFromHeader(c)
@@ -51,14 +51,22 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		res := validateAPIToken(runfig.MongoCtx, runfig.MongoClient, token)
+		res, tokenPermission := validateAPIToken(runfig.MongoCtx, runfig.MongoClient, token)
+
 		if res == false {
 			c.IndentedJSON(http.StatusUnauthorized, "invalid Bearer Token")
 			c.Abort()
 			return
 		}
-		fmt.Println("Bearer Token validated successfully")
-		c.Next()
+		if requiredPermission == tokenPermission {
+			log.Println("Bearer Token validated successfully")
+			c.Next()
+			return
+		}
+		c.IndentedJSON(http.StatusUnauthorized, "Insufficient Token Permission for Request")
+		c.Abort()
+		return
+
 	}
 }
 
@@ -107,7 +115,8 @@ func claimKey(c *gin.Context) {
 		return
 	}
 
-	token, err := createToken(runfig.MongoCtx, runfig.MongoClient)
+	tokenPermission := "service"
+	token, err := createToken(runfig.MongoCtx, runfig.MongoClient, tokenPermission)
 	_ = expireLink(runfig.MongoCtx, runfig.MongoClient, linkID)
 
 	resp := tokenResponse{
@@ -118,14 +127,14 @@ func claimKey(c *gin.Context) {
 	c.IndentedJSON(http.StatusAccepted, resp)
 }
 
-func createToken(ctx context.Context, client *mongo.Client) (string, error) {
+func createToken(ctx context.Context, client *mongo.Client, permission string) (string, error) {
 
 	newToken := generateAPIToken()
 	hashedToken := hashAPIToken(newToken)
 
 	newAPIKey := APIKey{
 		HashedToken: hashedToken,
-		OwnerID:     1,
+		Permission:  permission,
 		CreatedDate: time.Now().String(),
 	}
 
@@ -140,7 +149,8 @@ func createToken(ctx context.Context, client *mongo.Client) (string, error) {
 // replaceToken saves & returns a new api token
 // the token used in the Authorization is scheduled to be deleted
 func replaceToken(c *gin.Context) {
-	newToken, err := createToken(runfig.MongoCtx, runfig.MongoClient)
+	tokenPermission := "service"
+	newToken, err := createToken(runfig.MongoCtx, runfig.MongoClient, tokenPermission)
 	if err != nil {
 		log.Println("error creating token: ", err)
 		c.AbortWithStatus(http.StatusInternalServerError)
@@ -185,7 +195,7 @@ func handleValidateAPIToken(c *gin.Context) {
 		return
 	}
 
-	res := validateAPIToken(runfig.MongoCtx, runfig.MongoClient, token)
+	res, _ := validateAPIToken(runfig.MongoCtx, runfig.MongoClient, token)
 	if res == false {
 		c.IndentedJSON(http.StatusUnauthorized, "invalid Bearer Token")
 	} else {
@@ -220,8 +230,8 @@ func findToken(ctx context.Context, client *mongo.Client, token string) (APIKey,
 	return resultKey, err
 }
 
-//validateAPIToken hashes the token and checks if it exists in the database
-func validateAPIToken(ctx context.Context, client *mongo.Client, token string) bool {
+//validateAPIToken hashes the token, checks if it exists in the database and returns the token's permission tag
+func validateAPIToken(ctx context.Context, client *mongo.Client, token string) (bool, string) {
 
 	hashedToken := hashAPIToken(token)
 	collection := client.Database("data-dj-main").Collection("apiKeys")
@@ -232,11 +242,15 @@ func validateAPIToken(ctx context.Context, client *mongo.Client, token string) b
 	if err != nil {
 		fmt.Println(noDocs)
 		if err.Error() == noDocs {
-			return false
+			return false, ""
 		}
 		fmt.Println(err.Error())
-		return false
+		return false, ""
 	}
+
 	//otherwise token is valid
-	return true
+	var key APIKey
+	result.Decode(&key)
+
+	return true, key.Permission
 }

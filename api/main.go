@@ -20,16 +20,23 @@ func setupRouter() *gin.Engine {
 	// function is returned.
 
 	router := gin.Default()
-	router.GET("/files", getAvailableFiles)
-	router.GET("/archive/:id", inspectArchive)
-	router.POST("/archive", handleArchive)
 	router.GET("/check", healthCheck)
-	router.POST("/addSourceBucket", addSourceBucket)
-	router.GET("/key/replace", AuthMiddleware(), replaceToken)
-	router.GET("key/claim/:id", claimKey)               //use a link to claim a token
 	router.GET("/key/validate", handleValidateAPIToken) //temporary, for debug purposes
-	//admin endpoints. TO DO add Auth
-	router.POST("key/createLink", handleCreateLink) //TO DO add Auth. for use by admins
+	router.GET("key/claim/:id", claimKey)               //use a link to create a token
+	authorized := router.Group("/")
+	authorized.Use(AuthMiddleware("service"))
+	{
+		authorized.GET("/files", getAvailableFiles)
+		authorized.GET("/archive/:id", inspectArchive)
+		authorized.POST("/archive", handleArchive)
+		authorized.POST("/addSourceBucket", addSourceBucket)
+		authorized.GET("/key/replace", AuthMiddleware("service"), replaceToken)
+	}
+	admin := router.Group("/admin")
+	admin.Use(AuthMiddleware("admin"))
+	{
+		admin.POST("/createKeyLink", handleCreateLink) //TO DO add Auth. for use by admins
+	}
 
 	return router
 }

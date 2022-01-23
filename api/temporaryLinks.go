@@ -111,7 +111,6 @@ func createSingleUseLink(ctx context.Context, client *mongo.Client, email string
 		ExpireAt:   time.Now().Add(time.Second * 120), //change this to time.hours in production
 		Permission: "createAPIToken",
 		Email:      email,
-		OwnerID:    1,
 	}
 	collection := client.Database("data-dj-main").Collection("temporaryLinks")
 	result, err := collection.InsertOne(ctx, signUpLink)
