@@ -95,17 +95,6 @@ func setTokenToExpire(ctx context.Context, client *mongo.Client, token string) {
 	fmt.Printf("Updated %v Documents!\n", result.ModifiedCount)
 }
 
-func createTokenHandler(c *gin.Context) {
-	newToken, err := createToken(runfig.MongoCtx, runfig.MongoClient)
-	if err != nil {
-		log.Println("error creating token: ", err)
-		c.AbortWithStatus(http.StatusInternalServerError)
-		return
-	}
-
-	c.JSON(http.StatusOK, newToken)
-}
-
 func claimKey(c *gin.Context) {
 	linkID := c.Param("id")
 	linkValid, err := validateTokenLink(runfig.MongoCtx, runfig.MongoClient, linkID)

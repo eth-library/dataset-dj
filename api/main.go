@@ -29,7 +29,6 @@ func setupRouter() *gin.Engine {
 	router.GET("key/claim/:id", claimKey)               //use a link to claim a token
 	router.GET("/key/validate", handleValidateAPIToken) //temporary, for debug purposes
 	//admin endpoints. TO DO add Auth
-	router.GET("/key/create", createTokenHandler)
 	router.POST("key/createLink", handleCreateLink) //TO DO add Auth. for use by admins
 
 	return router
