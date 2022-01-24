@@ -68,11 +68,22 @@ _potential downsides:_ cost (there are cheaper alternatives), Google Cloud requi
 
 
 ## Database
-_decision:_  TBD
+_decision:_  __MongoDB__ 
 
-_alternatives:_ ...  
+_alternatives:_ SQL databases
 
-_justification:_ ...
+_justification:_ NoSQL format is more flexible for rapid testing. The nature of the application data also suits the document structure of NoSQL databases, where very few queries will need to join to other 'tables' but rather retrieve the details of an individual archive. MongoDB is one of the most commonly used NoSQL databases, it offers free to use Docker images for self hosting as well as a free tier for thier hosted db service (mongo atlas).
+Golang's struct format also maps well to the json structure of the mongodb documents.
 
 _potential downsides:_ 
 
+## Authentication
+
+_decision:_  API KEYS
+
+_alternatives:_ JWT, Auth0, self-signing
+
+_justification:_ the application core application is intended as a backend service (a service that other API's call). Authentication for applications is most commonly done using API Keys. JWT requires the use of username and passwords to periodically log in (so is a method that is better suited for users to authenticate).
+only hashed API KEYS are saved in the database to prevent them from being used if the DB is leaked.
+
+_potential downsides:_ authentication using API KEYS __must__ use SSL to be secure, but this is usually common practice.
