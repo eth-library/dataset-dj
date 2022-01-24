@@ -15,7 +15,7 @@ func generateToken() string {
 	}
 
 	runfig.ArchiveIDs.Add(newUID)
-	dbutil.UpdateArchiveIDs(runfig.MongoCtx, runfig.MongoClient, runfig.ArchiveIDs.ToSlice())
+	dbutil.UpdateArchiveIDs(runfig.MongoCtx, runfig.MongoClient, config.DbName, runfig.ArchiveIDs.ToSlice())
 
 	return newUID
 }

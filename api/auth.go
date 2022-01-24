@@ -74,7 +74,7 @@ func deleteToken(ctx context.Context, client *mongo.Client, token string) {
 
 	existingHash := hashAPIToken(token)
 
-	collection := client.Database("data-dj-main").Collection("apiKeys")
+	collection := client.Database(config.DbName).Collection("apiKeys")
 	result, err := collection.DeleteOne(
 		ctx,
 		bson.M{"hashedToken": existingHash},
@@ -89,7 +89,7 @@ func setTokenToExpire(ctx context.Context, client *mongo.Client, token string) {
 
 	existingHash := hashAPIToken(token)
 
-	collection := client.Database("data-dj-main").Collection("apiKeys")
+	collection := client.Database(config.DbName).Collection("apiKeys")
 	result, err := collection.UpdateOne(
 		ctx,
 		bson.M{"hashedToken": existingHash},
@@ -138,7 +138,7 @@ func createToken(ctx context.Context, client *mongo.Client, permission string) (
 		CreatedDate: time.Now().String(),
 	}
 
-	_, err := dbutil.InsertOne(ctx, client, "data-dj-main", "apiKeys", newAPIKey)
+	_, err := dbutil.InsertOne(ctx, client, config.DbName, "apiKeys", newAPIKey)
 
 	if err != nil {
 		log.Println(err)
@@ -224,7 +224,7 @@ func findToken(ctx context.Context, client *mongo.Client, token string) (APIKey,
 	var resultKey APIKey
 
 	hashedToken := hashAPIToken(token)
-	collection := client.Database("data-dj-main").Collection("apiKeys")
+	collection := client.Database(config.DbName).Collection("apiKeys")
 	err := collection.FindOne(ctx, bson.M{"hashedToken": hashedToken}).Decode(&resultKey)
 
 	return resultKey, err
@@ -234,7 +234,7 @@ func findToken(ctx context.Context, client *mongo.Client, token string) (APIKey,
 func validateAPIToken(ctx context.Context, client *mongo.Client, token string) (bool, string) {
 
 	hashedToken := hashAPIToken(token)
-	collection := client.Database("data-dj-main").Collection("apiKeys")
+	collection := client.Database(config.DbName).Collection("apiKeys")
 	result := collection.FindOne(ctx, bson.M{"hashedToken": hashedToken})
 	err := result.Err()
 

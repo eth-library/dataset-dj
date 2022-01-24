@@ -7,7 +7,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/eth-library-lab/dataset-dj/datastructs"
-	"github.com/eth-library-lab/dataset-dj/dbutil"
+	dbutil "github.com/eth-library-lab/dataset-dj/dbutil"
 	"github.com/eth-library-lab/dataset-dj/redisutil"
 	"github.com/go-redis/redis"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -45,18 +45,18 @@ func InitRuntimeConfig(sc *ServerConfig) *RuntimeConfig {
 	}
 
 	// Ping mongoDB with Ping method
-	err = dbutil.PingMDB(mongoClient, ctx)
+	err = dbutil.PingMDB(ctx, mongoClient)
 	if err != nil {
 		fmt.Println("error PingMDB: ", err)
 	}
 
 	// Load the list of already used archiveIDs when redeploying
-	archiveIDs, err := dbutil.LoadArchiveIDs(mongoCtx, mongoClient)
+	archiveIDs, err := dbutil.LoadArchiveIDs(mongoCtx, mongoClient, sc.DbName)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	sourceBucketList, err := dbutil.LoadSourceBuckets(mongoCtx, mongoClient)
+	sourceBucketList, err := dbutil.LoadSourceBuckets(mongoCtx, mongoClient, sc.DbName)
 	sourceBuckets := dbutil.BucketMapfromSlice(sourceBucketList)
 	if err != nil {
 		log.Println("WARNING: no sourceBucketList found: ", err)

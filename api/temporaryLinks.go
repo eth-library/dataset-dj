@@ -112,7 +112,7 @@ func createSingleUseLink(ctx context.Context, client *mongo.Client, email string
 		Permission: "createAPIToken",
 		Email:      email,
 	}
-	collection := client.Database("data-dj-main").Collection("temporaryLinks")
+	collection := client.Database(config.DbName).Collection("temporaryLinks")
 	result, err := collection.InsertOne(ctx, signUpLink)
 	if err != nil {
 		fmt.Println(err)
@@ -128,7 +128,7 @@ func createSingleUseLink(ctx context.Context, client *mongo.Client, email string
 func validateTokenLink(ctx context.Context, client *mongo.Client, linkID string) (bool, error) {
 	id, _ := primitive.ObjectIDFromHex(linkID)
 	var link singleUseLink
-	collection := client.Database("data-dj-main").Collection("temporaryLinks")
+	collection := client.Database(config.DbName).Collection("temporaryLinks")
 	result := collection.FindOne(
 		ctx,
 		bson.M{"_id": id},
@@ -152,7 +152,7 @@ func validateTokenLink(ctx context.Context, client *mongo.Client, linkID string)
 // prevents possibility of individual users having multiple valid links
 func deleteExistingLinks(ctx context.Context, client *mongo.Client, email string) error {
 
-	collection := client.Database("data-dj-main").Collection("temporaryLinks")
+	collection := client.Database(config.DbName).Collection("temporaryLinks")
 	result, err := collection.DeleteMany(
 		ctx,
 		bson.M{"email": email},
@@ -167,7 +167,7 @@ func deleteExistingLinks(ctx context.Context, client *mongo.Client, email string
 func expireLink(ctx context.Context, client *mongo.Client, linkID string) error {
 
 	id, _ := primitive.ObjectIDFromHex(linkID)
-	collection := client.Database("data-dj-main").Collection("temporaryLinks")
+	collection := client.Database(config.DbName).Collection("temporaryLinks")
 	result, err := collection.UpdateOne(
 		ctx,
 		bson.M{"_id": id},
