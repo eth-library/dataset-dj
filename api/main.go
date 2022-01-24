@@ -15,7 +15,7 @@ func setupRouter() *gin.Engine {
 
 	config = conf.InitServerConfig()
 	runfig = conf.InitRuntimeConfig(config)
-
+	_ = initAdminToken(runfig.MongoCtx, runfig.MongoClient)
 	// Release db resource when the main
 	// function is returned.
 

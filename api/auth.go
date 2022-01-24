@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -116,7 +117,7 @@ func claimKey(c *gin.Context) {
 	}
 
 	tokenPermission := "service"
-	token, err := createToken(runfig.MongoCtx, runfig.MongoClient, tokenPermission)
+	token, err := CreateToken(runfig.MongoCtx, runfig.MongoClient, tokenPermission)
 	_ = expireLink(runfig.MongoCtx, runfig.MongoClient, linkID)
 
 	resp := tokenResponse{
@@ -127,9 +128,42 @@ func claimKey(c *gin.Context) {
 	c.IndentedJSON(http.StatusAccepted, resp)
 }
 
-func createToken(ctx context.Context, client *mongo.Client, permission string) (string, error) {
+//initAdminToken generates a random api key and inserts it in the database
+func initAdminToken(ctx context.Context, client *mongo.Client) error {
 
-	newToken := generateAPIToken()
+	// check if already existing
+	col := client.Database(config.DbName).Collection("apiKeys")
+	result := col.FindOne(ctx, bson.M{"permission": "admin"})
+	if result.Err() == nil {
+		log.Println("using existing admin token")
+		return nil
+	}
+	if result.Err() != nil {
+		// no existing admin token
+		// save one if not
+		token := os.Getenv("ADMIN_KEY")
+		hashedToken := hashAPIToken(token)
+
+		newAPIKey := APIKey{
+			HashedToken: hashedToken,
+			Permission:  "admin",
+			CreatedDate: time.Now().String(),
+		}
+		_, err := dbutil.InsertOne(ctx, client, config.DbName, "apiKeys", newAPIKey)
+		if err != nil {
+			log.Println(err)
+		}
+
+		log.Println("inserted admin token from environment")
+		return nil
+	}
+	return fmt.Errorf("could not find or save admin token")
+}
+
+//CreateToken generates a random api key and inserts it in the database
+func CreateToken(ctx context.Context, client *mongo.Client, permission string) (string, error) {
+
+	newToken := generateAPIToken(permission)
 	hashedToken := hashAPIToken(newToken)
 
 	newAPIKey := APIKey{
@@ -150,7 +184,7 @@ func createToken(ctx context.Context, client *mongo.Client, permission string) (
 // the token used in the Authorization is scheduled to be deleted
 func replaceToken(c *gin.Context) {
 	tokenPermission := "service"
-	newToken, err := createToken(runfig.MongoCtx, runfig.MongoClient, tokenPermission)
+	newToken, err := CreateToken(runfig.MongoCtx, runfig.MongoClient, tokenPermission)
 	if err != nil {
 		log.Println("error creating token: ", err)
 		c.AbortWithStatus(http.StatusInternalServerError)
@@ -203,14 +237,30 @@ func handleValidateAPIToken(c *gin.Context) {
 	}
 }
 
-func generateAPIToken() string {
+func getTokenPrefix(permission string) (string, error) {
+
+	if permission == "admin" {
+		return "ak_", nil
+	}
+	if permission == "service" {
+		return "sk_", nil
+	}
+	return "", fmt.Errorf("permission must be one of [admin, service]")
+
+}
+
+func generateAPIToken(permission string) string {
 	length := 16
 	b := make([]byte, length)
 	_, err := rand.Read(b)
 	if err != nil {
 		return ""
 	}
-	return "sk_" + hex.EncodeToString(b)
+	prefix, err := getTokenPrefix(permission)
+	if err != nil {
+		return ""
+	}
+	return prefix + hex.EncodeToString(b)
 }
 
 func hashAPIToken(token string) string {

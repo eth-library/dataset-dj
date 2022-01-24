@@ -1,6 +1,7 @@
 package configuration
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -54,7 +55,9 @@ func InitServerConfig() *ServerConfig {
 	}
 
 	if cfg.Mode == "debug" {
-		fmt.Printf("config: %#v\n", cfg)
+		empJSON, _ := json.MarshalIndent(cfg, "", "  ")
+		fmt.Print("config: \n", string(empJSON), "\n")
+
 	}
 
 	return &cfg

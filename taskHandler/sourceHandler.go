@@ -24,5 +24,5 @@ func handleSourceBucketMessage(messagePayload string) {
 	}
 	runfig.SourceBuckets[bucket.BucketURL+bucket.BucketName] = bucket
 
-	dbutil.UpdateSourceBuckets(runfig.MongoCtx, runfig.MongoClient, sourceBucketListBSON)
+	dbutil.UpdateSourceBuckets(runfig.MongoCtx, runfig.MongoClient, config.DbName, sourceBucketListBSON)
 }
