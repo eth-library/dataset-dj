@@ -13,6 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+//RuntimeConfig holds pointers to storage clients and some in memory lists
 type RuntimeConfig struct {
 	StorageClient    *storage.Client // client used to connect to the storage in order to read and write files
 	RdbClient        *redis.Client
@@ -59,7 +60,9 @@ func InitRuntimeConfig(sc *ServerConfig) *RuntimeConfig {
 	sourceBucketList, err := dbutil.LoadSourceBuckets(mongoCtx, mongoClient, sc.DbName)
 	sourceBuckets := dbutil.BucketMapfromSlice(sourceBucketList)
 	if err != nil {
-		log.Println("WARNING: no sourceBucketList found: ", err)
+		if sc.Mode != "test" {
+			log.Println("WARNING: no sourceBucketList found: ", err)
+		}
 		// init as empty slices and maps to avoid nil pointer errors
 		sourceBucketList = []dbutil.SourceBucket{}
 		sourceBuckets = map[string]dbutil.SourceBucket{}

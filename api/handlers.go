@@ -196,7 +196,5 @@ func addSourceBucket(c *gin.Context) {
 
 // handler for a simple healthCheck API that verifies if the service is alive / running
 func healthCheck(c *gin.Context) {
-	msg := "The service is running and has received the healthCheck request"
-	fmt.Println(msg)
-	c.IndentedJSON(http.StatusOK, msg)
+	c.String(http.StatusOK, "pong")
 }
