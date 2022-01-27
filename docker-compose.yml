@@ -10,4 +10,15 @@ services:
     ports: 
         - "27017:27017"
 
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    env_file:
+      - .env.test
+    ports: 
+      - "8765:8765"
+    volumes:
+      - ./secrets:/app/secrets:ro
+      - ./data:/data-mount
 
