@@ -11,6 +11,7 @@ services:
         - "27017:27017"
 
   api:
+    image: dataset-dj_api:latest
     build:
       context: .
       dockerfile: Dockerfile.api
@@ -22,3 +23,14 @@ services:
       - ./secrets:/app/secrets:ro
       - ./data:/data-mount
 
+  # image names have to be lower case
+  taskhandler:
+    image: dataset-dj_taskhandler:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.taskHandler
+    env_file:
+      - .env.test
+    volumes:
+      - ./secrets:/app/secrets:ro
+      - ./data:/data-mount
