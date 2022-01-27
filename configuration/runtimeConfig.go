@@ -7,17 +7,19 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/eth-library-lab/dataset-dj/datastructs"
-	"github.com/eth-library-lab/dataset-dj/dbutil"
+	dbutil "github.com/eth-library-lab/dataset-dj/dbutil"
 	"github.com/eth-library-lab/dataset-dj/redisutil"
 	"github.com/go-redis/redis"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+//RuntimeConfig holds pointers to storage clients and some in memory lists
 type RuntimeConfig struct {
 	StorageClient    *storage.Client // client used to connect to the storage in order to read and write files
 	RdbClient        *redis.Client
 	MongoClient      *mongo.Client
 	MongoCtx         context.Context
+	CtxCancel        context.CancelFunc
 	ArchiveIDs       datastructs.Set
 	SourceBucketList []dbutil.SourceBucket
 	SourceBuckets    map[string]dbutil.SourceBucket
@@ -43,26 +45,27 @@ func InitRuntimeConfig(sc *ServerConfig) *RuntimeConfig {
 		panic(err)
 	}
 
-	// Release resource when the main
-	// function is returned.
-	defer dbutil.CloseMDB(mongoClient, mongoCtx, cancel)
-
 	// Ping mongoDB with Ping method
-	err = dbutil.PingMDB(mongoClient, ctx)
+	err = dbutil.PingMDB(ctx, mongoClient)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("error PingMDB: ", err)
 	}
 
 	// Load the list of already used archiveIDs when redeploying
-	archiveIDs, err := dbutil.LoadArchiveIDs(mongoClient, mongoCtx)
+	archiveIDs, err := dbutil.LoadArchiveIDs(mongoCtx, mongoClient, sc.DbName)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	sourceBucketList, err := dbutil.LoadSourceBuckets(mongoClient, mongoCtx)
+	sourceBucketList, err := dbutil.LoadSourceBuckets(mongoCtx, mongoClient, sc.DbName)
 	sourceBuckets := dbutil.BucketMapfromSlice(sourceBucketList)
 	if err != nil {
-		log.Fatal(err)
+		if sc.Mode != "test" {
+			log.Println("WARNING: no sourceBucketList found: ", err)
+		}
+		// init as empty slices and maps to avoid nil pointer errors
+		sourceBucketList = []dbutil.SourceBucket{}
+		sourceBuckets = map[string]dbutil.SourceBucket{}
 	}
 
 	rc := RuntimeConfig{
@@ -70,6 +73,7 @@ func InitRuntimeConfig(sc *ServerConfig) *RuntimeConfig {
 		RdbClient:        rdbClient,
 		MongoClient:      mongoClient,
 		MongoCtx:         mongoCtx,
+		CtxCancel:        cancel,
 		ArchiveIDs:       archiveIDs,
 		SourceBucketList: sourceBucketList,
 		SourceBuckets:    sourceBuckets}

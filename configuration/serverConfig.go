@@ -1,12 +1,13 @@
 package configuration
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 )
 
-// serverConfig holds all of the deployment specific environment variables and settings
+// ServerConfig holds all of the deployment specific environment variables and settings
 // it gets initialised by a function and should be globally accessible
 type ServerConfig struct {
 	ProjectID            string // google cloud project-id that contains bucket resources
@@ -19,6 +20,7 @@ type ServerConfig struct {
 	ArchiveLocalDir      string // path to directory on local machine to write archive files
 	SourceAPIURL         string // URL to API giving access to provided files
 	DbConnector          string // link to connect to mongoDB database
+	DbName               string
 	RdbAddr              string // what address and port redis should connect to
 	Port                 string // port to start api listening on
 	Mode                 string // mode that gin is running in (use as mode for entire application)
@@ -26,7 +28,7 @@ type ServerConfig struct {
 	ServiceEmailPassword string // password for email address
 }
 
-//initServerConfig initiliases the serverConfig struct with all of the environment variables
+//InitServerConfig initiliases the serverConfig struct with all of the environment variables
 func InitServerConfig() *ServerConfig {
 	cfg := ServerConfig{
 		ProjectID:            os.Getenv("PROJECT_ID"),            // for example: "data-dj-2021
@@ -39,6 +41,7 @@ func InitServerConfig() *ServerConfig {
 		ArchiveLocalDir:      os.Getenv("ARCHIVE_LOCAL_DIR"),     // for example: "../archives/",
 		SourceAPIURL:         os.Getenv("SOURCE_API_URL"),        // for example: "",
 		DbConnector:          os.Getenv("DB_CONNECTOR"),          // for example: "mongodb+srv://username:password@cluster.jzmhu.mongodb.net/collection?retryWrites=true&w=majority",
+		DbName:               os.Getenv("DB_NAME"),               // for example: main or test
 		RdbAddr:              os.Getenv("Rdb_ADDR"),              // for example: "0.0.0.0:6379" or "localhost:6379",
 		Port:                 os.Getenv("PORT"),                  // retrieve the PORT env variable for usage within the google cloud,
 		Mode:                 os.Getenv("GIN_MODE"),              // for example: "debug" or "production"
@@ -52,7 +55,9 @@ func InitServerConfig() *ServerConfig {
 	}
 
 	if cfg.Mode == "debug" {
-		fmt.Printf("config: %#v\n", cfg)
+		empJSON, _ := json.MarshalIndent(cfg, "", "  ")
+		fmt.Print("config: \n", string(empJSON), "\n")
+
 	}
 
 	return &cfg

@@ -1,0 +1,4 @@
+.env.*
+notebooks/
+data/
+docker-compose.yml

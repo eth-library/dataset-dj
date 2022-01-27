@@ -16,8 +16,9 @@ func InitRedisConnection(addr string) *redis.Client {
 
 	// check if redis db is reachable
 	pong, err := rdbClient.Ping().Result()
-	fmt.Println(pong, err)
-
+	if (err != nil) || (pong != "PONG") {
+		fmt.Println(err, " got: ", pong)
+	}
 	return rdbClient
 
 }

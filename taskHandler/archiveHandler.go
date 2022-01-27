@@ -8,6 +8,8 @@ import (
 	"io"
 	"log"
 	"os"
+
+	redisutils "github.com/eth-library-lab/dataset-dj/redisutil"
 )
 
 type archiveRequest struct {
@@ -29,10 +31,31 @@ func handleArchiveMessage(messagePayload string) {
 	fmt.Println("handling archRequest: ", archRequest)
 	err := zipFiles(archRequest)
 	if err == nil && archRequest.Email != "" {
-		publishEmailTask(archRequest)
+
+		emailParts := prepareArchiveReadyEmail(archRequest)
+		redisutils.PublishTask(runfig.RdbClient, emailParts, "email")
 	} else {
 		fmt.Println("err: ", err)
 	}
+}
+
+func prepareArchiveReadyEmail(request archiveRequest) EmailParts {
+	archFile := archBaseName + "_" + request.ArchiveID + ".zip" // name of the zip archive
+	// construct content of the mail
+	content := "The following files have been downloaded and were archived as " + archFile + ":\n\n"
+	for _, name := range request.Files {
+		content = content + name + "\n"
+	}
+	content = content + "\nThe archive can be retrieved from:\n" + config.ArchiveBaseURL + config.ArchiveBucketPrefix + archFile + "\n\nYours truly,\n\nThe DataDJ\n"
+
+	emailParts := EmailParts{
+		To:       request.Email,
+		Subject:  "Data DJ Archive Ready for Download",
+		BodyType: "text/plain",
+		Body:     content,
+	}
+
+	return emailParts
 }
 
 // zipFiles is a wrapper function that decides if zipFilesLocal or zipFilesGC ('zipFilesGoogleCloud') should be called

@@ -50,6 +50,11 @@ curl https://data-dj-2021.oa.r.appspot.com/files
 
 ---
 
+```bash
+curl -X POST "0.0.0.0:8765/admin/revokeKey"  -H "Authorization: Bearer $ADMIN_KEY" -v -H "content:application/json" -d '{"apiKey":"sk_86d8f6adf1909657b772cdad84e691d8"}'
+``` 
+
+
 ### Creating, modifying or downloading archives (POST)
 https://data-dj-2021.oa.r.appspot.com/archive
 
@@ -178,8 +183,7 @@ open a separate terminal in project root.
 export all of the variables in the `.env.local` file  
 run the api  
 ```
-source .env.local
-export $(cut -d= -f1 .env.local)
+source .env.local && export $(cut -d= -f1 .env.local)
 go run ./api/*.go
 ```
 note that for any changes in the environment file to take effect, you must export the variables again and restart that part of the application.
@@ -204,4 +208,25 @@ curl http://0.0.0.0:8765/archive \
                    "cmt-001_1917_001_0059.jpg"],
         "source":"local"
         }'
+
 ```
+
+# Authentication
+
+generates a token  
+saves hashed token in mongo
+middleware function validates token during requests
+
+set mongo collection to delete a document after the given number of seconds.
+Does not apply if the index field is not in the document e.g. if a doc does not have `expiryRequestedDate` it will not be deleted.
+`db.apiKeys.createIndex( { "expiryRequestedDate": 1 }, { expireAfterSeconds: 3600 } )`
+
+
+# Useful Reference Material for Go
+
+- [Learning Go](https://learning.oreilly.com/library/view/learning-go/9781492077206/) by Jon Bodner  
+general reference for programming in GO; types, syntax, imports etc.  
+see Ch13 for writing tests
+
+- [Cloud Native Go](https://learning.oreilly.com/library/view/cloud-native-go/9781492076322)
+
