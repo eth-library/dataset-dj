@@ -50,6 +50,11 @@ curl https://data-dj-2021.oa.r.appspot.com/files
 
 ---
 
+```bash
+curl -X POST "0.0.0.0:8765/admin/revokeKey"  -H "Authorization: Bearer $ADMIN_KEY" -v -H "content:application/json" -d '{"apiKey":"sk_86d8f6adf1909657b772cdad84e691d8"}'
+``` 
+
+
 ### Creating, modifying or downloading archives (POST)
 https://data-dj-2021.oa.r.appspot.com/archive
 
@@ -178,8 +183,7 @@ open a separate terminal in project root.
 export all of the variables in the `.env.local` file  
 run the api  
 ```
-source .env.local
-export $(cut -d= -f1 .env.local)
+source .env.local && export $(cut -d= -f1 .env.local)
 go run ./api/*.go
 ```
 note that for any changes in the environment file to take effect, you must export the variables again and restart that part of the application.
