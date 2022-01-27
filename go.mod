@@ -5,10 +5,11 @@ go 1.17
 require (
 	cloud.google.com/go/storage v1.18.2
 	github.com/gin-gonic/gin v1.7.7
+	github.com/go-playground/assert/v2 v2.0.1
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/google/uuid v1.3.0
+	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/mongo-driver v1.8.2
-	golang.org/x/crypto v0.0.0-20201216223049-8b5274cf687f
 	google.golang.org/api v0.63.0
 	gopkg.in/mail.v2 v2.3.1
 )
@@ -26,6 +27,7 @@ require (
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403 // indirect
 	github.com/cncf/xds/go v0.0.0-20210312221358-fbca930ec8ed // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/envoyproxy/go-control-plane v0.9.9-0.20210512163311-63b5d3c536b0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.1.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
@@ -47,12 +49,15 @@ require (
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.17.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/stretchr/objx v0.1.0 // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.0.2 // indirect
 	github.com/xdg-go/stringprep v1.0.2 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	go.opencensus.io v0.23.0 // indirect
+	golang.org/x/crypto v0.0.0-20201216223049-8b5274cf687f // indirect
 	golang.org/x/net v0.0.0-20210503060351-7fd8e65b6420 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
@@ -65,4 +70,5 @@ require (
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 )
