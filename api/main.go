@@ -29,7 +29,6 @@ func setupRouter() *gin.Engine {
 		authorized.GET("/files", getAvailableFiles)
 		authorized.GET("/archive/:id", inspectArchive)
 		authorized.POST("/archive", handleArchive)
-		authorized.POST("/addSourceBucket", addSourceBucket)
 		authorized.GET("/key/replace", replaceToken)
 	}
 	admin := router.Group("/admin") //for use by admins only
@@ -37,6 +36,7 @@ func setupRouter() *gin.Engine {
 	{
 		admin.POST("/createKeyLink", handleCreateLink)
 		admin.POST("/revokeKey", revokeToken)
+		admin.POST("/addSourceBucket", addSourceBucket)
 	}
 
 	return router
