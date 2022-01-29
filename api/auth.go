@@ -344,7 +344,7 @@ func generateAPIToken(permission string) string {
 func hashAPIToken(token string) string {
 	h := sha256.New()
 	h.Write([]byte(token))
-	return string(h.Sum(nil))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func findToken(ctx context.Context, client *mongo.Client, token string) (APIKey, error) {
