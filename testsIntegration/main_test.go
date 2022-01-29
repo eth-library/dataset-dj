@@ -1,14 +1,13 @@
-//go:build integration
-
 package integration_tests
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var host = "http://0.0.0.0:8765"
@@ -23,7 +22,7 @@ func TestMain(m *testing.M) {
 	os.Exit(exitVal)
 }
 
-func TestPass(t *testing.T) {
+func TestThisShouldPass(t *testing.T) {
 	assert.Equal(t, 0, 0, "this should pass")
 }
 

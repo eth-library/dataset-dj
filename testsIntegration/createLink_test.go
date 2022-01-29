@@ -1,15 +1,14 @@
-//go:build integration
-
 package integration_tests
 
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateKeyLink(t *testing.T) {
