@@ -13,6 +13,16 @@ import (
 
 var host = "http://0.0.0.0:8765"
 
+func TestMain(m *testing.M) {
+	// set up before testing
+	fmt.Println("start integration testing")
+	// run tests
+	exitVal := m.Run()
+	fmt.Println("finished integration testing")
+	// tidy up AFTER the tests
+	os.Exit(exitVal)
+}
+
 func TestPass(t *testing.T) {
 	assert.Equal(t, 0, 0, "this should pass")
 }
@@ -41,12 +51,4 @@ func TestPing(t *testing.T) {
 	if gotResp != expectedResp {
 		t.Fatalf("expected %v, got %v", expectedResp, gotResp)
 	}
-}
-
-func TestMain(m *testing.M) {
-	fmt.Println("start integration testing")
-	exitVal := m.Run()
-	fmt.Println("finished integration testing")
-	// tidy up AFTER the tests
-	os.Exit(exitVal)
 }
