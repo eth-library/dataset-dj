@@ -43,6 +43,7 @@ type tokenRequest struct {
 type dbCollection interface {
 	DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
 	DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
+	FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) *mongo.SingleResult
 	// InsertOne(ctx context.Context, doc interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error)
 	// InsertMany(ctx context.Context, docs []interface{}, opts ...*options.InsertManyOptions) (*mongo.InsertManyResult, error)
 	// UpdateOne(ctx context.Context, filter interface{}, doc interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
@@ -73,7 +74,8 @@ func AuthMiddleware(requiredPermission string) gin.HandlerFunc {
 			return
 		}
 
-		res, tokenPermission := validateAPIToken(runfig.MongoCtx, runfig.MongoClient, token)
+		collection := getColHandle("apiKeys")
+		res, tokenPermission := validateAPIToken(collection, token)
 
 		if res == false {
 			c.IndentedJSON(http.StatusUnauthorized, "invalid Bearer Token")
@@ -270,7 +272,7 @@ func revokeToken(c *gin.Context) {
 	}
 
 	//make sure that the token is no longer valid
-	res, permission := validateAPIToken(runfig.MongoCtx, runfig.MongoClient, token.APIKey)
+	res, permission := validateAPIToken(col, token.APIKey)
 	if (res != false) || (permission != "") {
 		log.Println("error deleting token: ", err)
 		c.AbortWithStatus(http.StatusInternalServerError)
@@ -307,7 +309,8 @@ func handleValidateAPIToken(c *gin.Context) {
 		return
 	}
 
-	res, _ := validateAPIToken(runfig.MongoCtx, runfig.MongoClient, token)
+	collection := getColHandle("apiKeys")
+	res, _ := validateAPIToken(collection, token)
 	if res == false {
 		c.IndentedJSON(http.StatusUnauthorized, "invalid Bearer Token")
 	} else {
@@ -359,11 +362,12 @@ func findToken(ctx context.Context, client *mongo.Client, token string) (APIKey,
 }
 
 //validateAPIToken hashes the token, checks if it exists in the database and returns the token's permission tag
-func validateAPIToken(ctx context.Context, client *mongo.Client, token string) (bool, string) {
+func validateAPIToken(collection dbCollection, token string) (bool, string) {
 
 	hashedToken := hashAPIToken(token)
-	collection := client.Database(config.DbName).Collection("apiKeys")
-	result := collection.FindOne(ctx, bson.M{"hashedToken": hashedToken})
+
+	// collection := client.Database(config.DbName).Collection("apiKeys")
+	result := collection.FindOne(runfig.MongoCtx, bson.M{"hashedToken": hashedToken})
 	err := result.Err()
 
 	noDocs := "ErrNoDocuments"
