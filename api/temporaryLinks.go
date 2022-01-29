@@ -143,7 +143,8 @@ func validateTokenLink(ctx context.Context, client *mongo.Client, linkID string)
 		return false, result.Err()
 	}
 	if link.Used == true {
-		return false, fmt.Errorf("link already used")
+		fmt.Println("link already used")
+		return false, nil
 	}
 	return true, nil
 }
