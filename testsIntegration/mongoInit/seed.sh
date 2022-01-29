@@ -1,7 +1,6 @@
 #! bin/bash
 # drop the test db in case this script is run on an existing database
-mongo 
-<<-EOJS
+mongo <<-EOJS
 use test
 db.dropDatabase()
 EOJS
