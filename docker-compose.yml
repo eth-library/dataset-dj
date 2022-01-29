@@ -1,3 +1,5 @@
+# this docker-compose file is for testing purposes only!
+
 services:
     
   redis:
@@ -9,6 +11,9 @@ services:
     image: mongo
     ports: 
         - "27017:27017"
+    volumes:
+      - "./testsIntegration/mongoInit:/docker-entrypoint-initdb.d"
+      - "./testsIntegration/testData:/testData"
 
   api:
     image: dataset-dj_api:latest

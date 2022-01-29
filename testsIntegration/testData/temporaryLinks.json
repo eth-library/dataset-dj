@@ -1,0 +1,4 @@
+{"_id":{"$oid":"61f4231861914a390f009893"},"used":false,"permission":"createAPIToken","ownerID":0,"email":"datadj.librarylab+test0@gmail.com"}
+{"_id":{"$oid":"61f4232361914a390f009894"},"used":true,"permission":"createAPIToken","ownerID":0,"email":"datadj.librarylab+test1@gmail.com"}
+{"_id":{"$oid":"61f2e95474f948c5c29b8033"},"used":false,"permission":"createAPIToken","ownerID":0,"email":"datadj.librarylab+test2@gmail.com"}
+{"_id":{"$oid":"61f53f39633d5e2dd398fc67"},"used":false,"permission":"createAPIToken","ownerID":0,"email":"datadj.librarylab+test3@gmail.com"}
