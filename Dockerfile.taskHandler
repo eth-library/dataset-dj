@@ -15,7 +15,7 @@ RUN go build -o main .
 
 FROM build-stage
 
-RUN useradd --create-home --shell /bin/bash data-dj
-USER data-dj
+RUN useradd --create-home --shell /bin/bash datadj
+USER datadj
 
 CMD ["/app/taskHandler/main"]
