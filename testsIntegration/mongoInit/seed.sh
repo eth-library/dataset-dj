@@ -1,4 +1,5 @@
 #! bin/bash
+# seeds the db with testdata for integration testing
 # drop the test db in case this script is run on an existing database
 mongo <<-EOJS
 use test
