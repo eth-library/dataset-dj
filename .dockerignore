@@ -2,6 +2,7 @@
 secrets/
 notebooks/
 data/
+mongodb_data/
 docker-compose.yml
 testsIntegration/
 manager/
