@@ -1,4 +1,7 @@
 .env.*
+secrets/
 notebooks/
 data/
 docker-compose.yml
+testsIntegration/
+manager/
