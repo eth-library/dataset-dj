@@ -61,6 +61,7 @@ func prepareArchiveReadyEmail(request archiveRequest) EmailParts {
 // zipFiles is a wrapper function that decides if zipFilesLocal or zipFilesGC ('zipFilesGoogleCloud') should be called
 func zipFiles(archRequest archiveRequest) error {
 
+	fmt.Printf("archRequest: %+v\n", archRequest)
 	split := splitFiles(archRequest.Files)
 
 	if config.ArchiveLocalDir != "" {
@@ -75,9 +76,10 @@ func zipFiles(archRequest archiveRequest) error {
 
 		for i, file := range split.localFiles {
 
-			err := WriteLocalToZip(file, zipWriter)
+			filepath := config.SourceLocalDir + file
+			err := WriteLocalToZip(filepath, zipWriter)
 			if err != nil {
-				fmt.Printf("\r zipping file %d / %d: %s\n", i+1, len(archRequest.Files), config.SourceLocalDir+file)
+				fmt.Printf("\r zipping file %d / %d: %s\n", i+1, len(archRequest.Files), filepath)
 				log.Fatal(err)
 			}
 		}
@@ -143,9 +145,10 @@ func zipFiles(archRequest archiveRequest) error {
 
 		for i, file := range split.localFiles {
 
-			err := WriteLocalToZip(file, zipWriter)
+			filepath := config.SourceLocalDir + file
+			err := WriteLocalToZip(filepath, zipWriter)
 			if err != nil {
-				fmt.Printf("\r zipping file %d / %d: %s\n", i+1, len(archRequest.Files), config.SourceLocalDir+file)
+				fmt.Printf("\r zipping file %d / %d: %s\n", i+1, len(archRequest.Files), filepath)
 				log.Fatal(err)
 			}
 		}
@@ -164,14 +167,25 @@ func zipFiles(archRequest archiveRequest) error {
 	return nil
 }
 
+func fileExists(fpath string) bool {
+	_, err := os.Stat(fpath)
+	if err == nil {
+		return true
+	}
+	return false
+}
+
 //WriteToZipLocal is a helper function for writing an individual local file to zip.Writer object
 func WriteLocalToZip(fileName string, writer *zip.Writer) error {
 
-	f, err := os.Open(fileName)
-	if err != nil {
-		return fmt.Errorf("could not find file: %s", fileName)
+	if !fileExists(fileName) {
+		return fmt.Errorf("file does not exist: %s\n", fileName)
 	}
+	f, err := os.Open(fileName)
 	defer f.Close()
+	if err != nil {
+		return fmt.Errorf("could not find file: %s\n%s", fileName, err)
+	}
 
 	w, err := writer.Create(fileName)
 	if err != nil {
@@ -233,10 +247,10 @@ func ZipFilesLocal(request archiveRequest) error {
 	zipWriter := zip.NewWriter(archive)
 
 	for i, file := range request.Files {
-
-		err := WriteLocalToZip(file, zipWriter)
+		filepath := config.SourceLocalDir + file
+		err := WriteLocalToZip(filepath, zipWriter)
 		if err != nil {
-			fmt.Printf("\r zipping file %d / %d: %s\n", i+1, len(request.Files), config.SourceLocalDir+file)
+			fmt.Printf("\r zipping file %d / %d: %s\n", i+1, len(request.Files), filepath)
 			log.Fatal(err)
 		}
 	}
