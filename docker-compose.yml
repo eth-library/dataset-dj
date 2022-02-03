@@ -23,7 +23,7 @@ services:
       context: .
       dockerfile: Dockerfile.api
     env_file:
-      - .env.test
+      - ${ENV_FILE}
     ports: 
       - "8765:8765"
     volumes:
@@ -41,7 +41,7 @@ services:
       context: .
       dockerfile: Dockerfile.taskHandler
     env_file:
-      - .env.test
+      - ${ENV_FILE}
     volumes:
       - ./secrets:/app/secrets:ro
       - ./data:/data-mount
