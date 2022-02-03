@@ -16,7 +16,6 @@ func TestCreateKeyLink(t *testing.T) {
 	client := &http.Client{}
 
 	validAdminKey := os.Getenv("ADMIN_KEY")
-
 	emailJSON, err := json.Marshal(map[string]string{
 		"email": "barry.sunderland@outlook.com",
 	})
@@ -34,7 +33,7 @@ func TestCreateKeyLink(t *testing.T) {
 		expectedCode int
 	}{
 		{
-			"should create new link should succeed",
+			"create new link should succeed",
 			"/admin/createKeyLink",
 			"POST",
 			http.Header{
