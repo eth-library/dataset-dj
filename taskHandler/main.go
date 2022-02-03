@@ -20,7 +20,7 @@ func main() {
 	runfig = conf.InitRuntimeConfig(config)
 
 	handlers := map[string]interface{}{
-		"archive":       handleArchiveMessage,
+		"archives":      handleArchiveMessage,
 		"emails":        handleEmailMessage,
 		"sourceBuckets": handleSourceBucketMessage,
 	}
