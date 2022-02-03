@@ -20,40 +20,43 @@ type mockCollection struct {
 	// other fields go here as normal
 }
 
-func (m mockCollection) DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+func (m *mockCollection) DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+
+	r := mongo.DeleteResult{
+		DeletedCount: 0,
+	}
+	err := errors.New("apiKey not found")
+
+	return &r, err
+}
+
+func (m *mockCollection) DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
 	r := &mongo.DeleteResult{
 		DeletedCount: 0,
 	}
 	return r, nil
 }
 
-func (m mockCollection) DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
-	r := &mongo.DeleteResult{
-		DeletedCount: 0,
-	}
-	return r, nil
+func (m *mockCollection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) *mongo.SingleResult {
+	r := &mongo.SingleResult{}
+	return r
 }
 
-func testDeleteToken(t *testing.T) {
+// func TestDeleteToken(t *testing.T) {
 
-	//case: provided apiKey not in database
-	mockCol := mockCollection{}
-	err := deleteToken(mockCol, "foo")
+// 	//case: provided apiKey not in database
+// 	mockCol := mockCollection{}
 
-	if err != nil {
-		t.Errorf("Error: in deleteToken: %v", err.Error())
-	}
+// 	// r, e := mockCol.DeleteMany(context.TODO(), struct{}{})
+// 	// fmt.Println(e.Error())
+// 	// fmt.Printf("r: %v\ne: %v\n", r, e)
+// 	err := deleteToken(mockCol, "foo")
 
-}
+// 	if err != nil {
+// 		t.Errorf("Error: in deleteToken: %v", err)
+// 	}
 
-// The mock package provides an object, Mock, that tracks activity on another object.  It is usually
-// embedded into a test object as shown below:
-//
-type MockCollection struct {
-	// add a Mock object instance
-	mock.Mock
-	// other fields go here as normal
-}
+// }
 
 // func dropCollection(ctx context.Context, client *mongo.Client) {
 // 	col := client.Database(config.DbName).Collection("apiKeys")
@@ -92,12 +95,18 @@ func TestGenerateAPIToken(t *testing.T) {
 
 func TestHashAPIToken(t *testing.T) {
 	token := "sk_0d588b42621105e7f77b2c584a7be4e2"
-	hashedToken := hashAPIToken(token)
-	if len(hashedToken) != 32 {
-		t.Error("should return a sha256 hashed string of length 32")
+	hashedToken1 := hashAPIToken(token)
+	hashedToken2 := hashAPIToken(token) //check that the hash function is repeatable
+
+	if hashedToken1[:3] == "sk_" {
+		t.Error("hashed token should not start with 'sk_' got: " + hashedToken1[:3] + "...")
 	}
-	if token == hashedToken {
-		errMsg := fmt.Sprint("hashed token can't be the same as input token! input: ", token, "output:", hashedToken)
+	if token == hashedToken1 {
+		errMsg := fmt.Sprint("hashed token can't be the same as input token! input: ", token, "output:", hashedToken1)
+		t.Error(errMsg)
+	}
+	if hashedToken1 != hashedToken2 {
+		errMsg := fmt.Sprintf("same input to hashed token should reproduce same output. input: %v output1: %v output2: %v", token, hashedToken1, hashedToken2)
 		t.Error(errMsg)
 	}
 }
