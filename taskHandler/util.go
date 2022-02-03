@@ -16,6 +16,7 @@ func splitFiles(files []string) fileSplit {
 	for _, file := range files {
 		accessMode, fileName := parseUntil(file, '/')
 
+		// should this block be all if's with an else that raises an error
 		if accessMode == "local" {
 			localFiles = append(localFiles, fileName)
 		} else if accessMode == "api" {
@@ -34,5 +35,5 @@ func splitFiles(files []string) fileSplit {
 
 func parseUntil(file string, delimiter byte) (string, string) {
 	index := strings.IndexByte(file, delimiter)
-	return file[:index], file[index:]
+	return file[:index], file[index+1:]
 }
