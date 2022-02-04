@@ -10,7 +10,6 @@ func SubscribeToRedisChannel(rdbClient *redis.Client, handlers map[string]interf
 	channel := subscriber.Channel()
 
 	for msg := range channel {
-		// fmt.Println("received ", msg.Payload, " from ", msg.Channel)
 		handlers[msg.Channel].(func(string))(msg.Payload)
 	}
 }
