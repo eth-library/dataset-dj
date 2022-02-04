@@ -33,7 +33,7 @@ func handleArchiveMessage(messagePayload string) {
 	if err == nil && archRequest.Email != "" {
 
 		emailParts := prepareArchiveReadyEmail(archRequest)
-		redisutils.PublishTask(runfig.RdbClient, emailParts, "email")
+		redisutils.PublishTask(runfig.RdbClient, emailParts, "emails")
 	} else {
 		fmt.Println("err: ", err)
 	}
