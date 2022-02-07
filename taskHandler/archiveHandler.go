@@ -28,14 +28,14 @@ func handleArchiveMessage(messagePayload string) {
 	// convert json string into struct
 	json.Unmarshal([]byte(messagePayload), &archRequest)
 
-	fmt.Println("handling archRequest: ", archRequest)
 	err := zipFiles(archRequest)
-	if err == nil && archRequest.Email != "" {
-
-		emailParts := prepareArchiveReadyEmail(archRequest)
-		redisutils.PublishTask(runfig.RdbClient, emailParts, "emails")
-	} else {
-		fmt.Println("err: ", err)
+	if err != nil || archRequest.Email == "" {
+		log.Println("Error handling archRequest: ", err)
+	}
+	emailParts := prepareArchiveReadyEmail(archRequest)
+	err = redisutils.PublishTask(runfig.RdbClient, emailParts, "emailERR")
+	if err != nil {
+		log.Println("ERROR publishing archive ready email task: ", err)
 	}
 }
 
@@ -69,7 +69,7 @@ func zipFiles(archRequest archiveRequest) error {
 		archiveFilePath := config.ArchiveLocalDir + archBaseName + "_" + archRequest.ArchiveID + ".zip"
 		archive, err := os.Create(archiveFilePath)
 		if err != nil {
-			log.Fatal(err)
+			log.Print("ERROR: while creating local zip file :", err)
 		}
 		defer archive.Close()
 		zipWriter := zip.NewWriter(archive)
@@ -80,7 +80,7 @@ func zipFiles(archRequest archiveRequest) error {
 			err := WriteLocalToZip(filepath, zipWriter)
 			if err != nil {
 				fmt.Printf("\r zipping file %d / %d: %s\n", i+1, len(archRequest.Files), filepath)
-				log.Fatal(err)
+				log.Print(err)
 			}
 		}
 
@@ -149,7 +149,7 @@ func zipFiles(archRequest archiveRequest) error {
 			err := WriteLocalToZip(filepath, zipWriter)
 			if err != nil {
 				fmt.Printf("\r zipping file %d / %d: %s\n", i+1, len(archRequest.Files), filepath)
-				log.Fatal(err)
+				log.Print(err)
 			}
 		}
 
@@ -241,7 +241,8 @@ func ZipFilesLocal(request archiveRequest) error {
 	archiveFilePath := config.ArchiveLocalDir + archBaseName + "_" + request.ArchiveID + ".zip"
 	archive, err := os.Create(archiveFilePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("ERROR: ", err)
+		return err
 	}
 	defer archive.Close()
 	zipWriter := zip.NewWriter(archive)
@@ -250,12 +251,12 @@ func ZipFilesLocal(request archiveRequest) error {
 		filepath := config.SourceLocalDir + file
 		err := WriteLocalToZip(filepath, zipWriter)
 		if err != nil {
-			fmt.Printf("\r zipping file %d / %d: %s\n", i+1, len(request.Files), filepath)
-			log.Fatal(err)
+			log.Printf("\r ERROR: zipping file %d / %d: %s\n", i+1, len(request.Files), filepath)
+			return err
 		}
 	}
 
 	zipWriter.Close()
-	fmt.Println("zip archive written to: ", archiveFilePath)
+	log.Println("INFO: zip archive written to: ", archiveFilePath)
 	return nil
 }
