@@ -1,5 +1,5 @@
 data/
-testsIntegration/testData/*.zip
+data_test/*.zip
 testsIntegration/testData/archives/
 mongodb_data/
 gcloud-app-key-file.json
