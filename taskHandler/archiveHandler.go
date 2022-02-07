@@ -33,7 +33,7 @@ func handleArchiveMessage(messagePayload string) {
 		log.Println("Error handling archRequest: ", err)
 	}
 	emailParts := prepareArchiveReadyEmail(archRequest)
-	err = redisutils.PublishTask(runfig.RdbClient, emailParts, "emailERR")
+	err = redisutils.PublishTask(runfig.RdbClient, emailParts, "emails")
 	if err != nil {
 		log.Println("ERROR publishing archive ready email task: ", err)
 	}
