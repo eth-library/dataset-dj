@@ -95,11 +95,13 @@ func publishAPILinkEmailTask(url string, recipientEmail string) error {
 		BodyType: "text/html",
 		Body:     content,
 	}
-	err := redisutil.PublishTask(runfig.RdbClient, emailparts, "emails")
+
+	err := redisutil.PublishTask(runfig.RdbClient, emailparts, "email")
 	if err != nil {
 		fmt.Println(err.Error())
+		return err
 	}
-	return err
+	return nil
 }
 
 func createSingleUseLink(ctx context.Context, client *mongo.Client, email string) string {
