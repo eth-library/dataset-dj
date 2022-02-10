@@ -84,7 +84,7 @@ func TestHandleArchive(t *testing.T) {
 		}
 
 		// test that zip file is created
-		archiveDir := os.Getenv("ARCHIVE_LOCAL_DIR")
+		archiveDir := "../" + os.Getenv("DATA_DIR") + "archives/"
 		expectedZipPath := archiveDir + "archive_" + respBody.ID + ".zip"
 		// wait to make sure zip file has been written
 		fmt.Println("wait 1s for zip...")

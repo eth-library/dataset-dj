@@ -26,13 +26,13 @@ func TestClaimAPIKey(t *testing.T) {
 	}{
 		{
 			"valid link ID should return apiKey",
-			"61f4231861914a390f009893",
+			"61f4231861914a390f000000",
 			http.StatusOK,
 			false,
 		},
 		{
 			"already used link ID should return bad request",
-			"61f4231861914a390f009893",
+			"61f4232361914a390f009894",
 			http.StatusBadRequest,
 			true,
 		},
@@ -58,7 +58,7 @@ func TestClaimAPIKey(t *testing.T) {
 		body, err := ioutil.ReadAll(resp.Body)
 		err = json.Unmarshal(body, &keyResp)
 		hadMarshalError := err != nil
-		assert.Equal(t, tc.expectMarshalError, hadMarshalError, msgPrefix+"resp body not as expected")
+		assert.Equal(t, tc.expectMarshalError, hadMarshalError, msgPrefix+"resp body not as expected, ", body)
 
 		// test that the returned apiKey works
 		if tc.expectMarshalError == false {
