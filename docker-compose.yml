@@ -12,7 +12,7 @@ services:
     image: mongo
     volumes:
       - "./testsIntegration/mongoInit:/docker-entrypoint-initdb.d"
-      - "./testsIntegration/testData:/testData"
+      - "./${DATA_DIR}:/testData"
     ports: 
       - "27017:27017"
     restart: "no"
@@ -28,7 +28,7 @@ services:
       - "8765:8765"
     volumes:
       - ./secrets:/app/secrets:ro
-      - ./data:/data-mount
+      - ./${DATA_DIR}:/data-mount
     depends_on:
       - db
       - redis
@@ -44,7 +44,7 @@ services:
       - ${ENV_FILE}
     volumes:
       - ./secrets:/app/secrets:ro
-      - ./data:/data-mount
+      - ./${DATA_DIR}:/data-mount
     depends_on:
       - db
       - redis

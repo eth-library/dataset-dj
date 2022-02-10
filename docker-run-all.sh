@@ -48,6 +48,7 @@ docker run --name data-dj_api_1 \
 # taskhandler
 echo "starting taskhandler"
 docker run --name data-dj_taskhandler_1 \
+    --user=$USER_ID \
     --net=data-dj \
     --network-alias=taskhandler \
     --env-file=$(pwd)/.env.prod \
