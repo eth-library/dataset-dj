@@ -1,7 +1,12 @@
 # DataDJ
 
-The DataDJ can be accessed at https://data-dj-2021.oa.r.appspot.com/
+Data DJ is a value-adding service for collections and archives, currently in development at ETH Library Lab, that helps to provide more convenient and efficient access to batches of digitised records and files. The service works in conjunction with collections' existing websites and search portals. The collection's website forwards the user's request for a list of files to the Data DJ, our service then gathers and compresses the files, and notifies the user via email with a convenient download link.
 
+<img src="./assets/DataDJ-simple-overview.gif" width=350 title="data dj process overview">
+
+The requests to the sample application DataDJ can be accessed at https://data-dj-2021.oa.r.appspot.com/
+
+If you are planning to work on this project, contact us to ask for the detailed internal documentation.
 
 ## Quickstart Guide
 
@@ -199,17 +204,23 @@ send a request
 ```
 curl http://0.0.0.0:8765/archive \
 --include \
---header "Content-Type: application/json" \
 --request "POST" \
+--header "Authorization: Bearer $USER_KEY" \
+--header "Content-Type: application/json" \
 --data '{"email":"barry.sunderland@librarylab.ethz.ch",
          "archiveID":"",
-         "files":["cmt-001_1917_001_0016.jpg",
-                   "cmt-001_1917_001_0017.jpg",
-                   "cmt-001_1917_001_0059.jpg"],
-        "source":"local"
+         "files":["local/cmt-001_1917_001_0016.jpg",
+                   "local/cmt-001_1917_001_0017.jpg",
+                   "local/cmt-001_1917_001_0059.jpg"]
         }'
 
 ```
+
+curl -X POST "0.0.0.0:8765/admin/createKeyLink" \
+    -H "Authorization: Bearer $ADMIN_KEY" \
+    -H "content:application/json" \
+    -d '{"email":"barry.sunderland@outlook.com"}'`
+
 
 # Authentication
 
@@ -230,3 +241,7 @@ see Ch13 for writing tests
 
 - [Cloud Native Go](https://learning.oreilly.com/library/view/cloud-native-go/9781492076322)
 
+
+# Material for MongoDB
+
+ http://www.inanzzz.com/index.php/post/g7e8/running-mongodb-migration-script-at-the-docker-startup 

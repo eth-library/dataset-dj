@@ -1,0 +1,21 @@
+FROM golang:1.17 as build-stage
+
+WORKDIR /app
+
+#add a directory that other directories can be mounted to
+RUN mkdir /data-mount
+
+COPY . /app
+# RUN chmod -R 744 /app/secrets
+COPY ./go.mod /app/go.mod
+COPY ./go.sum /app/go.sum
+
+WORKDIR /app/taskHandler
+RUN go build -o main .
+
+FROM build-stage
+
+RUN useradd --create-home --shell /bin/bash datadj
+USER datadj
+
+CMD ["/app/taskHandler/main"]

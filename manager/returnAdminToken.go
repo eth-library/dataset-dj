@@ -2,7 +2,9 @@ package main
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
+	"flag"
 	"fmt"
 )
 
@@ -25,8 +27,23 @@ func generateAdminAPIToken() string {
 	return "ak_" + hex.EncodeToString(b)
 }
 
+func hashToken(token string) string {
+	h := sha256.New()
+	h.Write([]byte(token))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
 func main() {
 
 	token := generateAdminAPIToken()
 	fmt.Println("token: ", token)
+
+	showHash := flag.Bool("hash", false, "also display the hashed token (e.g. for testing/debugging purposes)")
+	flag.Parse()
+
+	if *showHash {
+		hashedToken := hashToken(token)
+		fmt.Println("hashedToken: ", hashedToken)
+	}
+
 }

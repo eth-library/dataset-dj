@@ -28,14 +28,14 @@ func handleArchiveMessage(messagePayload string) {
 	// convert json string into struct
 	json.Unmarshal([]byte(messagePayload), &archRequest)
 
-	fmt.Println("handling archRequest: ", archRequest)
 	err := zipFiles(archRequest)
-	if err == nil && archRequest.Email != "" {
-
-		emailParts := prepareArchiveReadyEmail(archRequest)
-		redisutils.PublishTask(runfig.RdbClient, emailParts, "email")
-	} else {
-		fmt.Println("err: ", err)
+	if err != nil || archRequest.Email == "" {
+		log.Println("Error handling archRequest: ", err)
+	}
+	emailParts := prepareArchiveReadyEmail(archRequest)
+	err = redisutils.PublishTask(runfig.RdbClient, emailParts, "emails")
+	if err != nil {
+		log.Println("ERROR publishing archive ready email task: ", err)
 	}
 }
 
@@ -61,6 +61,7 @@ func prepareArchiveReadyEmail(request archiveRequest) EmailParts {
 // zipFiles is a wrapper function that decides if zipFilesLocal or zipFilesGC ('zipFilesGoogleCloud') should be called
 func zipFiles(archRequest archiveRequest) error {
 
+	fmt.Printf("archRequest: %+v\n", archRequest)
 	split := splitFiles(archRequest.Files)
 
 	if config.ArchiveLocalDir != "" {
@@ -68,17 +69,18 @@ func zipFiles(archRequest archiveRequest) error {
 		archiveFilePath := config.ArchiveLocalDir + archBaseName + "_" + archRequest.ArchiveID + ".zip"
 		archive, err := os.Create(archiveFilePath)
 		if err != nil {
-			log.Fatal(err)
+			log.Print("ERROR: while creating local zip file :", err)
 		}
 		defer archive.Close()
 		zipWriter := zip.NewWriter(archive)
 
 		for i, file := range split.localFiles {
 
-			err := WriteLocalToZip(file, zipWriter)
+			filepath := config.SourceLocalDir + file
+			err := WriteLocalToZip(filepath, zipWriter)
 			if err != nil {
-				fmt.Printf("\r zipping file %d / %d: %s\n", i+1, len(archRequest.Files), config.SourceLocalDir+file)
-				log.Fatal(err)
+				fmt.Printf("\r zipping file %d / %d: %s\n", i+1, len(archRequest.Files), filepath)
+				log.Print(err)
 			}
 		}
 
@@ -143,10 +145,11 @@ func zipFiles(archRequest archiveRequest) error {
 
 		for i, file := range split.localFiles {
 
-			err := WriteLocalToZip(file, zipWriter)
+			filepath := config.SourceLocalDir + file
+			err := WriteLocalToZip(filepath, zipWriter)
 			if err != nil {
-				fmt.Printf("\r zipping file %d / %d: %s\n", i+1, len(archRequest.Files), config.SourceLocalDir+file)
-				log.Fatal(err)
+				fmt.Printf("\r zipping file %d / %d: %s\n", i+1, len(archRequest.Files), filepath)
+				log.Print(err)
 			}
 		}
 
@@ -164,14 +167,25 @@ func zipFiles(archRequest archiveRequest) error {
 	return nil
 }
 
+func fileExists(fpath string) bool {
+	_, err := os.Stat(fpath)
+	if err == nil {
+		return true
+	}
+	return false
+}
+
 //WriteToZipLocal is a helper function for writing an individual local file to zip.Writer object
 func WriteLocalToZip(fileName string, writer *zip.Writer) error {
 
-	f, err := os.Open(fileName)
-	if err != nil {
-		return fmt.Errorf("could not find file: %s", fileName)
+	if !fileExists(fileName) {
+		return fmt.Errorf("file does not exist: %s\n", fileName)
 	}
+	f, err := os.Open(fileName)
 	defer f.Close()
+	if err != nil {
+		return fmt.Errorf("could not find file: %s\n%s", fileName, err)
+	}
 
 	w, err := writer.Create(fileName)
 	if err != nil {
@@ -227,21 +241,22 @@ func ZipFilesLocal(request archiveRequest) error {
 	archiveFilePath := config.ArchiveLocalDir + archBaseName + "_" + request.ArchiveID + ".zip"
 	archive, err := os.Create(archiveFilePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("ERROR: ", err)
+		return err
 	}
 	defer archive.Close()
 	zipWriter := zip.NewWriter(archive)
 
 	for i, file := range request.Files {
-
-		err := WriteLocalToZip(file, zipWriter)
+		filepath := config.SourceLocalDir + file
+		err := WriteLocalToZip(filepath, zipWriter)
 		if err != nil {
-			fmt.Printf("\r zipping file %d / %d: %s\n", i+1, len(request.Files), config.SourceLocalDir+file)
-			log.Fatal(err)
+			log.Printf("\r ERROR: zipping file %d / %d: %s\n", i+1, len(request.Files), filepath)
+			return err
 		}
 	}
 
 	zipWriter.Close()
-	fmt.Println("zip archive written to: ", archiveFilePath)
+	log.Println("INFO: zip archive written to: ", archiveFilePath)
 	return nil
 }

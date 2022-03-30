@@ -43,6 +43,7 @@ type tokenRequest struct {
 type dbCollection interface {
 	DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
 	DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
+	FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) *mongo.SingleResult
 	// InsertOne(ctx context.Context, doc interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error)
 	// InsertMany(ctx context.Context, docs []interface{}, opts ...*options.InsertManyOptions) (*mongo.InsertManyResult, error)
 	// UpdateOne(ctx context.Context, filter interface{}, doc interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
@@ -73,7 +74,8 @@ func AuthMiddleware(requiredPermission string) gin.HandlerFunc {
 			return
 		}
 
-		res, tokenPermission := validateAPIToken(runfig.MongoCtx, runfig.MongoClient, token)
+		collection := getColHandle("apiKeys")
+		res, tokenPermission := validateAPIToken(collection, token)
 
 		if res == false {
 			c.IndentedJSON(http.StatusUnauthorized, "invalid Bearer Token")
@@ -114,7 +116,7 @@ func claimKey(c *gin.Context) {
 		Message: "store this API Key securely. It cannot be retrieved again. Do not disclose it to anyone. Use the /key/replace endpoint to replace this key periodically or if it is compromised",
 	}
 	log.Printf("info: APIKey claimed from temp link: %v", linkID)
-	c.IndentedJSON(http.StatusAccepted, resp)
+	c.IndentedJSON(http.StatusOK, resp)
 }
 
 func deleteToken(col dbCollection, token string) error {
@@ -270,7 +272,7 @@ func revokeToken(c *gin.Context) {
 	}
 
 	//make sure that the token is no longer valid
-	res, permission := validateAPIToken(runfig.MongoCtx, runfig.MongoClient, token.APIKey)
+	res, permission := validateAPIToken(col, token.APIKey)
 	if (res != false) || (permission != "") {
 		log.Println("error deleting token: ", err)
 		c.AbortWithStatus(http.StatusInternalServerError)
@@ -307,7 +309,8 @@ func handleValidateAPIToken(c *gin.Context) {
 		return
 	}
 
-	res, _ := validateAPIToken(runfig.MongoCtx, runfig.MongoClient, token)
+	collection := getColHandle("apiKeys")
+	res, _ := validateAPIToken(collection, token)
 	if res == false {
 		c.IndentedJSON(http.StatusUnauthorized, "invalid Bearer Token")
 	} else {
@@ -344,7 +347,7 @@ func generateAPIToken(permission string) string {
 func hashAPIToken(token string) string {
 	h := sha256.New()
 	h.Write([]byte(token))
-	return string(h.Sum(nil))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func findToken(ctx context.Context, client *mongo.Client, token string) (APIKey, error) {
@@ -359,11 +362,12 @@ func findToken(ctx context.Context, client *mongo.Client, token string) (APIKey,
 }
 
 //validateAPIToken hashes the token, checks if it exists in the database and returns the token's permission tag
-func validateAPIToken(ctx context.Context, client *mongo.Client, token string) (bool, string) {
+func validateAPIToken(collection dbCollection, token string) (bool, string) {
 
 	hashedToken := hashAPIToken(token)
-	collection := client.Database(config.DbName).Collection("apiKeys")
-	result := collection.FindOne(ctx, bson.M{"hashedToken": hashedToken})
+
+	// collection := client.Database(config.DbName).Collection("apiKeys")
+	result := collection.FindOne(runfig.MongoCtx, bson.M{"hashedToken": hashedToken})
 	err := result.Err()
 
 	noDocs := "ErrNoDocuments"

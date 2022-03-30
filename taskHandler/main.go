@@ -13,18 +13,18 @@ var (
 	runfig *conf.RuntimeConfig
 )
 
+var subscribers = map[string]interface{}{
+	"archives":      handleArchiveMessage,
+	"emails":        handleEmailMessage,
+	"sourceBuckets": handleSourceBucketMessage,
+}
+
 func main() {
 	fmt.Println("started task subscriber")
 
 	config = conf.InitServerConfig()
 	runfig = conf.InitRuntimeConfig(config)
 
-	handlers := map[string]interface{}{
-		"archive":       handleArchiveMessage,
-		"emails":        handleEmailMessage,
-		"sourceBuckets": handleSourceBucketMessage,
-	}
-
-	redisutil.SubscribeToRedisChannel(runfig.RdbClient, handlers)
+	redisutil.SubscribeToRedisChannel(runfig.RdbClient, subscribers)
 
 }

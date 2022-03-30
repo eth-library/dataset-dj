@@ -4,18 +4,15 @@ services:
     
   redis:
     image: redis
-    restart: "no"
-    ports: 
-      - "6379:6379"
-
+    restart: unless-stopped
+  
   db:
     image: mongo
     volumes:
       - "./testsIntegration/mongoInit:/docker-entrypoint-initdb.d"
       - "./${DATA_DIR}:/testData"
-    ports: 
-      - "27017:27017"
-    restart: "no"
+      - "./mongodb_data:/data/db"
+    restart: unless-stopped
 
   api:
     image: registry.ethz.ch/bsunderland/data-dj-images/api:latest
@@ -33,8 +30,8 @@ services:
       - db
       - redis
       - taskhandler
-    restart: "no"
-
+    restart: unless-stopped
+      
   taskhandler:
     image: registry.ethz.ch/bsunderland/data-dj-images/taskhandler:latest
     build:
@@ -48,4 +45,4 @@ services:
     depends_on:
       - db
       - redis
-    restart: "no"
+    restart: unless-stopped

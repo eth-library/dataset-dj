@@ -21,6 +21,7 @@ type EmailParts struct {
 //PublishTask marshals a struct into json
 // and publishes to the channelName redis channel where the task will be
 // handled by a subscriber/worker
+// returns number of workers that are subscribed to the channel
 func PublishTask(client *redis.Client, TaskMessage interface{}, channelName string) error {
 
 	//convert struct to json
@@ -30,13 +31,18 @@ func PublishTask(client *redis.Client, TaskMessage interface{}, channelName stri
 		return err
 	}
 	// publish to channel
-	err = client.Publish(channelName, jsonMessage).Err()
+	resp := client.Publish(channelName, jsonMessage)
+	err = resp.Err()
 	if nil != err {
 		fmt.Printf("publish Error: %s", err.Error())
 		return err
 	}
 
-	fmt.Println("published task to: ", channelName)
+	// fmt.Println("published task to: ", channelName)
+	if resp.Val() == 0 {
+		return fmt.Errorf("message published to channel '%v' that has no subscribers\n", channelName)
+	}
+	// number of subscribers, error
 	return nil
 
 }

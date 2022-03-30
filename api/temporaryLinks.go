@@ -62,7 +62,8 @@ func handleCreateLink(c *gin.Context) {
 	//TO DO: send email to recipient instead of return link
 	err = publishAPILinkEmailTask(url, email)
 	if err != nil {
-		fmt.Println(err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, "error encountered while sending email")
+		return
 	}
 	c.IndentedJSON(http.StatusCreated, "email with token link sent")
 }
@@ -95,11 +96,13 @@ func publishAPILinkEmailTask(url string, recipientEmail string) error {
 		BodyType: "text/html",
 		Body:     content,
 	}
+
 	err := redisutil.PublishTask(runfig.RdbClient, emailparts, "emails")
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Println("ERROR while publishing email task:", err.Error())
+		return err
 	}
-	return err
+	return nil
 }
 
 func createSingleUseLink(ctx context.Context, client *mongo.Client, email string) string {
@@ -143,7 +146,8 @@ func validateTokenLink(ctx context.Context, client *mongo.Client, linkID string)
 		return false, result.Err()
 	}
 	if link.Used == true {
-		return false, fmt.Errorf("link already used")
+		fmt.Println("link already used")
+		return false, nil
 	}
 	return true, nil
 }
