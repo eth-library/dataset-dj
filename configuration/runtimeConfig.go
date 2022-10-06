@@ -7,13 +7,13 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/eth-library-lab/dataset-dj/datastructs"
-	dbutil "github.com/eth-library-lab/dataset-dj/dbutil"
+	"github.com/eth-library-lab/dataset-dj/dbutil"
 	"github.com/eth-library-lab/dataset-dj/redisutil"
 	"github.com/go-redis/redis"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-//RuntimeConfig holds pointers to storage clients and some in memory lists
+// RuntimeConfig holds pointers to storage clients and some in memory lists
 type RuntimeConfig struct {
 	StorageClient    *storage.Client // client used to connect to the storage in order to read and write files
 	RdbClient        *redis.Client

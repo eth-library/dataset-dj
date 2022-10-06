@@ -13,13 +13,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-// metaArchives are the blueprints for the zip archives that will be created once the user initiates
+// MetaArchive is the blueprint for the zip archives that will be created once the user initiates
 // the download process. Files is implemented as a set in order to avoid duplicate files within a
 // metaArchive
-// type metaArchive struct {
-// 	ID    string `json:"id"`
-// 	Files set    `json:"files"`
-// }
+//
+//	type metaArchive struct {
+//		ID    string `json:"id"`
+//		Files set    `json:"files"`
+//	}
 type MetaArchive struct {
 	ID          string          `json:"id"`
 	Files       datastructs.Set `json:"files"`
@@ -29,7 +30,7 @@ type MetaArchive struct {
 	Source      string          `json:"source"`
 }
 
-// converts the meta archive to binary JSON format
+// ToBSON converts the meta archive to binary JSON format
 func (a MetaArchive) ToBSON() bson.D {
 	var files bson.A
 	for _, v := range a.Files.ToSlice() {
@@ -82,7 +83,7 @@ type idFileWrapper struct {
 	Ids []string `json:"ids"`
 }
 
-// This is a user defined method to close resources.
+// CloseMDB is a user defined method to close resources.
 // This method closes mongoDB connection and cancel context.
 func CloseMDB(client *mongo.Client, ctx context.Context, cancel context.CancelFunc) {
 
@@ -119,7 +120,7 @@ func ConnectToMDB(uri string) (*mongo.Client, context.Context, context.CancelFun
 	return client, ctx, cancel, err
 }
 
-//PingMDB is a user defined method that accepts
+// PingMDB is a user defined method that accepts
 // mongo.Client and context.Context
 // This method used to ping the mongoDB, return error if any.
 func PingMDB(ctx context.Context, client *mongo.Client) error {
@@ -193,7 +194,7 @@ func FindArchiveInDB(ctx context.Context, client *mongo.Client, dbName, id strin
 	return archive, err
 }
 
-//UpdateFilesOfArchive accepts client, context, database, collection, filter and update filter
+// UpdateFilesOfArchive accepts client, context, database, collection, filter and update filter
 // and update is of type interface this method returns UpdateResult and an error if any.
 func UpdateFilesOfArchive(ctx context.Context, client *mongo.Client, dbName string, id string, update interface{}) (*mongo.UpdateResult, error) {
 
@@ -207,7 +208,7 @@ func UpdateFilesOfArchive(ctx context.Context, client *mongo.Client, dbName stri
 	return result, err
 }
 
-//UpdateArchiveIDs updates the list of archiveIDs in the DB
+// UpdateArchiveIDs updates the list of archiveIDs in the DB
 func UpdateArchiveIDs(ctx context.Context, client *mongo.Client, dbName string, update interface{}) (*mongo.UpdateResult, error) {
 	collection := client.Database(dbName).Collection("archiveIDs")
 
@@ -215,7 +216,7 @@ func UpdateArchiveIDs(ctx context.Context, client *mongo.Client, dbName string, 
 	return result, err
 }
 
-//LoadArchiveIDs retrieves a list of archiveIDs from the database
+// LoadArchiveIDs retrieves a list of archiveIDs from the database
 func LoadArchiveIDs(ctx context.Context, client *mongo.Client, dbName string) (datastructs.Set, error) {
 	var idStruct idFileWrapper
 	var archiveIDs datastructs.Set
@@ -235,7 +236,7 @@ func LoadArchiveIDs(ctx context.Context, client *mongo.Client, dbName string) (d
 	return archiveIDs, err
 }
 
-//LoadSourceBuckets retrieves a list of archiveIDs from the db
+// LoadSourceBuckets retrieves a list of archiveIDs from the db
 func LoadSourceBuckets(ctx context.Context, client *mongo.Client, dbName string) ([]SourceBucket, error) {
 	var sourceStruct bucketFileWrapper
 	col := client.Database(dbName).Collection("sourceBuckets")
@@ -243,7 +244,7 @@ func LoadSourceBuckets(ctx context.Context, client *mongo.Client, dbName string)
 	return sourceStruct.buckets, err
 }
 
-//UpdateSourceBuckets updates the list of archiveIDs in the DB
+// UpdateSourceBuckets updates the list of archiveIDs in the DB
 func UpdateSourceBuckets(ctx context.Context, client *mongo.Client, dbName string, update interface{}) (*mongo.UpdateResult, error) {
 	collection := client.Database(dbName).Collection("sourceBuckets")
 

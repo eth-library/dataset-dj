@@ -1,3 +1,4 @@
+client.http
 .idea/*
 data/
 data_test/*/*.zip

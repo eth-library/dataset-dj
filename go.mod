@@ -5,7 +5,6 @@ go 1.17
 require (
 	cloud.google.com/go/storage v1.18.2
 	github.com/gin-gonic/gin v1.7.7
-	github.com/go-playground/assert/v2 v2.0.1
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.7.0
