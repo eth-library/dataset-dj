@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	redisutil "github.com/eth-library-lab/dataset-dj/redisutil"
+	redisutil "github.com/eth-library/dataset-dj/redisutil"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -23,12 +23,12 @@ type singleUseLink struct {
 	Email      string    `bson:"email"`
 }
 
-//EmailRequestBody for binding email field in a a json body
+// EmailRequestBody for binding email field in a a json body
 type EmailRequestBody struct {
 	Email string `json:"email"`
 }
 
-//EmailParts required by the mailHandler to send an email
+// EmailParts required by the mailHandler to send an email
 type EmailParts struct {
 	To       string
 	Subject  string
@@ -152,7 +152,7 @@ func validateTokenLink(ctx context.Context, client *mongo.Client, linkID string)
 	return true, nil
 }
 
-//deleteExistingLinks deletes any existing temporaryLinks assosciated with `email`
+// deleteExistingLinks deletes any existing temporaryLinks assosciated with `email`
 // prevents possibility of individual users having multiple valid links
 func deleteExistingLinks(ctx context.Context, client *mongo.Client, email string) error {
 

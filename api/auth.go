@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/eth-library-lab/dataset-dj/dbutil"
+	"github.com/eth-library/dataset-dj/dbutil"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -24,7 +24,7 @@ type authHeader struct {
 	Authorization string `header:"Authorization"`
 }
 
-//APIKey is the format of the mongodb document that stores the keys
+// APIKey is the format of the mongodb document that stores the keys
 type APIKey struct {
 	HashedToken string `bson:"hashedToken,omitempty"`
 	CreatedDate string `bson:"createdDate,omitempty"`
@@ -49,16 +49,15 @@ type dbCollection interface {
 	// UpdateOne(ctx context.Context, filter interface{}, doc interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
 }
 
-//colHandle returns a reference to a mongodb collection handle
+// colHandle returns a reference to a mongodb collection handle
 func getColHandle(collectionName string) *mongo.Collection {
-
 	db := runfig.MongoClient.Database(config.DbName)
 	collection := db.Collection(collectionName)
 	return collection
 }
 
-//AuthMiddleware validates the bearer token before
-//allowing the handler to be a called
+// AuthMiddleware validates the bearer token before
+// allowing the handler to be a called
 func AuthMiddleware(requiredPermission string) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
@@ -170,7 +169,7 @@ func setTokenToExpire(ctx context.Context, client *mongo.Client, token string) {
 	fmt.Printf("Updated %v Documents!\n", result.ModifiedCount)
 }
 
-//initAdminToken generates a random api key and inserts it in the database
+// initAdminToken generates a random api key and inserts it in the database
 func initAdminToken(ctx context.Context, client *mongo.Client) error {
 
 	// check if already existing
@@ -205,7 +204,7 @@ func initAdminToken(ctx context.Context, client *mongo.Client) error {
 	return fmt.Errorf("could not find or save admin token")
 }
 
-//CreateToken generates a random api key and inserts it in the database
+// CreateToken generates a random api key and inserts it in the database
 func CreateToken(ctx context.Context, client *mongo.Client, permission string) (string, error) {
 
 	newToken := generateAPIToken(permission)
@@ -251,7 +250,7 @@ func replaceToken(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, resp)
 }
 
-//revokeToken revokes an apiKey by deleting the key from the database. It will be revoked immediately.
+// revokeToken revokes an apiKey by deleting the key from the database. It will be revoked immediately.
 func revokeToken(c *gin.Context) {
 
 	var token tokenRequest
@@ -282,8 +281,8 @@ func revokeToken(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, resp)
 }
 
-//getTokenFromHeader extracts the token part of the
-//Authorization field in the Header field
+// getTokenFromHeader extracts the token part of the
+// Authorization field in the Header field
 func getTokenFromHeader(c *gin.Context) (string, error) {
 	h := authHeader{}
 	if err := c.ShouldBindHeader(&h); err != nil {
@@ -296,7 +295,7 @@ func getTokenFromHeader(c *gin.Context) (string, error) {
 	return strings.TrimSpace(parts[1]), nil
 }
 
-//handleValidateAPIToken provides a way to check if an Api Key is valid
+// handleValidateAPIToken provides a way to check if an Api Key is valid
 func handleValidateAPIToken(c *gin.Context) {
 
 	token, err := getTokenFromHeader(c)
@@ -361,7 +360,7 @@ func findToken(ctx context.Context, client *mongo.Client, token string) (APIKey,
 	return resultKey, err
 }
 
-//validateAPIToken hashes the token, checks if it exists in the database and returns the token's permission tag
+// validateAPIToken hashes the token, checks if it exists in the database and returns the token's permission tag
 func validateAPIToken(collection dbCollection, token string) (bool, string) {
 
 	hashedToken := hashAPIToken(token)

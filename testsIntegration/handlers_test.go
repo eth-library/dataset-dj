@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/eth-library-lab/dataset-dj/dbutil"
+	"github.com/eth-library/dataset-dj/dbutil"
 	"github.com/stretchr/testify/assert"
 )
 

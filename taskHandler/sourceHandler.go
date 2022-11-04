@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/eth-library-lab/dataset-dj/dbutil"
+	"github.com/eth-library/dataset-dj/dbutil"
 	"go.mongodb.org/mongo-driver/bson"
 )
 

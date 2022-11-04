@@ -1,8 +1,8 @@
 package main
 
 import (
-	conf "github.com/eth-library-lab/dataset-dj/configuration"
-	"github.com/eth-library-lab/dataset-dj/dbutil"
+	conf "github.com/eth-library/dataset-dj/configuration"
+	"github.com/eth-library/dataset-dj/dbutil"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,7 +18,6 @@ func setupConfig() {
 }
 
 func setupRouter() *gin.Engine {
-
 	router := gin.Default()
 	router.GET("/ping", healthCheck)
 	router.GET("/key/validate", handleValidateAPIToken) //temporary, for debug purposes

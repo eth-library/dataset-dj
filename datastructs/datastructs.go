@@ -1,26 +1,26 @@
 package datastructs
 
-// the set struct has one attribute elements that holds true when an element is in the set
+// Set struct has one attribute elements that holds true when an element is in the set
 type Set struct {
 	Elems map[string]bool `json:"elements"`
 }
 
-// checks if elem is contained within set s
+// Check if elem is contained within set s
 func (s Set) Check(elem string) bool {
 	return s.Elems[elem]
 }
 
-// adds elem to set s
+// Add elem to set s
 func (s Set) Add(elem string) {
 	s.Elems[elem] = true
 }
 
-// deletes elem from set s
+// Del deletes elem from set s
 func (s Set) Del(elem string) {
 	delete(s.Elems, elem)
 }
 
-// replace the elements of a set by the contents of a slice
+// SetElemsFromSlice replaces the elements of a set by the contents of a slice
 func (s Set) SetElemsFromSlice(slice []string) {
 	s.Elems = map[string]bool{}
 	for _, e := range slice {
@@ -28,7 +28,7 @@ func (s Set) SetElemsFromSlice(slice []string) {
 	}
 }
 
-// return the elements of a set as a slice
+// ToSlice returns the elements of a set as a slice
 func (s Set) ToSlice() []string {
 	slice := []string{}
 	for e := range s.Elems {
@@ -37,7 +37,7 @@ func (s Set) ToSlice() []string {
 	return slice
 }
 
-// create a set from a slice
+// SetFromSlice creates a set from a slice
 func SetFromSlice(slice []string) Set {
 	s := Set{Elems: map[string]bool{}}
 	for _, e := range slice {

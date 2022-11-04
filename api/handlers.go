@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/eth-library-lab/dataset-dj/datastructs"
-	"github.com/eth-library-lab/dataset-dj/dbutil"
-	"github.com/eth-library-lab/dataset-dj/redisutil"
+	"github.com/eth-library/dataset-dj/datastructs"
+	"github.com/eth-library/dataset-dj/dbutil"
+	"github.com/eth-library/dataset-dj/redisutil"
 
 	"github.com/gin-gonic/gin"
 )
@@ -182,6 +182,7 @@ func addSourceBucket(c *gin.Context) {
 	var bucket dbutil.SourceBucket
 
 	if err := c.BindJSON(&bucket); err != nil {
+		fmt.Println(err)
 		return
 	}
 

@@ -9,7 +9,7 @@ import (
 	"log"
 	"os"
 
-	redisutils "github.com/eth-library-lab/dataset-dj/redisutil"
+	redisutils "github.com/eth-library/dataset-dj/redisutil"
 )
 
 type archiveRequest struct {
@@ -46,7 +46,8 @@ func prepareArchiveReadyEmail(request archiveRequest) EmailParts {
 	for _, name := range request.Files {
 		content = content + name + "\n"
 	}
-	content = content + "\nThe archive can be retrieved from:\n" + config.ArchiveBaseURL + config.ArchiveBucketPrefix + archFile + "\n\nYours truly,\n\nThe DataDJ\n"
+	link := config.ArchiveBaseURL + config.ArchiveBucketName + "/" + config.ArchiveBucketPrefix + archFile
+	content = content + "\nThe archive can be retrieved from:\n" + link + "\n\nYours truly,\n\nThe DataDJ\n"
 
 	emailParts := EmailParts{
 		To:       request.Email,
@@ -175,7 +176,7 @@ func fileExists(fpath string) bool {
 	return false
 }
 
-//WriteToZipLocal is a helper function for writing an individual local file to zip.Writer object
+// WriteToZipLocal is a helper function for writing an individual local file to zip.Writer object
 func WriteLocalToZip(fileName string, writer *zip.Writer) error {
 
 	if !fileExists(fileName) {

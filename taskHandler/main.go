@@ -4,8 +4,8 @@ package main
 import (
 	"fmt"
 
-	conf "github.com/eth-library-lab/dataset-dj/configuration"
-	"github.com/eth-library-lab/dataset-dj/redisutil"
+	conf "github.com/eth-library/dataset-dj/configuration"
+	"github.com/eth-library/dataset-dj/redisutil"
 )
 
 var (

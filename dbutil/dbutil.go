@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/eth-library-lab/dataset-dj/datastructs"
+	"github.com/eth-library/dataset-dj/datastructs"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -13,14 +13,22 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-// MetaArchive is the blueprint for the zip archives that will be created once the user initiates
-// the download process. Files is implemented as a set in order to avoid duplicate files within a
-// metaArchive
-//
 //	type metaArchive struct {
 //		ID    string `json:"id"`
 //		Files set    `json:"files"`
 //	}
+type MetaArchiveRaw struct {
+	ID          string   `json:"id"`
+	Files       []string `json:"files"`
+	TimeCreated string   `json:"timeCreated"`
+	TimeUpdated string   `json:"timeUpdated"`
+	Status      string   `json:"status"`
+	Source      string   `json:"source"`
+}
+
+// MetaArchive is the blueprint for the zip archives that will be created once the user initiates
+// the download process. Files is implemented as a set in order to avoid duplicate files within a
+// metaArchive
 type MetaArchive struct {
 	ID          string          `json:"id"`
 	Files       datastructs.Set `json:"files"`
@@ -28,6 +36,18 @@ type MetaArchive struct {
 	TimeUpdated string          `json:"timeUpdated"`
 	Status      string          `json:"status"`
 	Source      string          `json:"source"`
+}
+
+func (raw MetaArchiveRaw) convert() MetaArchive {
+	var a MetaArchive
+	a.ID = raw.ID
+	a.Files = datastructs.SetFromSlice(raw.Files)
+	a.TimeCreated = raw.TimeCreated
+	a.TimeUpdated = raw.TimeUpdated
+	a.Status = raw.Status
+	a.Source = raw.Source
+
+	return a
 }
 
 // ToBSON converts the meta archive to binary JSON format
@@ -187,9 +207,12 @@ func AddArchiveToDB(ctx context.Context, client *mongo.Client, dbName string, ar
 
 // FindArchiveInDB retrieves an archive from the MongoDB
 func FindArchiveInDB(ctx context.Context, client *mongo.Client, dbName, id string) (MetaArchive, error) {
+	var raw MetaArchiveRaw
 	var archive MetaArchive
 	collection := client.Database(dbName).Collection("archives")
-	err := collection.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", id}}}}).Decode(&archive)
+	err := collection.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", id}}}}).Decode(&raw)
+	fmt.Println(err)
+	archive = raw.convert()
 	archive.ID = id
 	return archive, err
 }

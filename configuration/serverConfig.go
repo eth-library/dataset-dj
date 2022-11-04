@@ -31,7 +31,7 @@ type ServerConfig struct {
 // InitServerConfig initializes the serverConfig struct with all of the environment variables
 func InitServerConfig() *ServerConfig {
 	cfg := ServerConfig{
-		ProjectID:            os.Getenv("PROJECT_ID"),            // for example: "data-dj-2021
+		ProjectID:            os.Getenv("PROJECT_ID"),            // for example: "data-dj-2021"
 		ArchiveBaseURL:       os.Getenv("ARCHIVE_BASE_URL"),      // for example: "https://storage.googleapis.com/"
 		SourceBucketName:     os.Getenv("SOURCE_BUCKET_NAME"),    // for example: "data-dj-2021.appspot.com",
 		SourceBucketPrefix:   os.Getenv("SOURCE_BUCKET_PREFIX"),  // for example: "data-mirror/",

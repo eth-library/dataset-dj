@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"google.golang.org/api/iterator"
 	"io/ioutil"
 	"log"
 	"net/mail"
@@ -10,8 +11,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	conf "github.com/eth-library-lab/dataset-dj/configuration"
-	"google.golang.org/api/iterator"
+	conf "github.com/eth-library/dataset-dj/configuration"
 )
 
 // simple "Database" for the metaArchives
@@ -25,7 +25,7 @@ type File struct {
 	Size     int32  `json:"size"`
 }
 
-//emailIsValid if email is a valid format for a public address
+// emailIsValid if email is a valid format for a public address
 // returns the parsed address and nil if valid
 // or return an empty string and error if invalid
 func emailIsValid(email string) (string, error) {
@@ -45,6 +45,7 @@ func emailIsValid(email string) (string, error) {
 // are connected via API. This function acts as layer of abstraction such that the function
 // calls in handlers.go don't need to be modified.
 func retrieveAllFiles() ([]string, error) {
+	override := true
 	var allAvailableFiles []string
 	localFiles, err := retrieveFilesLocal(config.SourceLocalDir)
 	if err != nil {
@@ -52,7 +53,7 @@ func retrieveAllFiles() ([]string, error) {
 	}
 	allAvailableFiles = append(allAvailableFiles, localFiles...)
 
-	if len(runfig.SourceBucketList) > 0 {
+	if len(runfig.SourceBucketList) > 0 || override {
 		cloudFiles, err := retrieveFilesCloud(runfig.StorageClient, config)
 		if err != nil {
 			return allAvailableFiles, err
@@ -70,6 +71,9 @@ func retrieveAllFiles() ([]string, error) {
 
 // retrieve file names from local storage (a directory that may be accessed directly)
 func retrieveFilesLocal(localSourceDir string) ([]string, error) {
+	if localSourceDir == "" {
+		return []string{}, nil
+	}
 	return listFileDir(localSourceDir)
 }
 
@@ -86,18 +90,20 @@ func retrieveFilesCloud(client *storage.Client, config *conf.ServerConfig) ([]st
 	bucket := client.Bucket(config.SourceBucketName)
 
 	it := bucket.Objects(ctx, &storage.Query{
-		Prefix: config.SourceBucketPrefix,
+		Prefix:    config.SourceBucketPrefix,
+		Delimiter: "/",
 	})
 
 	// Loop over all objects returned by the query
 	for {
 		attrs, err := it.Next()
-		if err != nil {
-			return nil, fmt.Errorf("an error occured while retrieving a file from the cloud storage")
-		}
 
 		if err == iterator.Done {
 			break
+		}
+
+		if err != nil {
+			return nil, fmt.Errorf("an error occured while retrieving a file from the cloud storage: %s", err)
 		}
 
 		if attrs.Name == config.SourceBucketPrefix { // make sure the directory is not listed as available file

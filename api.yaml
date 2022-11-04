@@ -1,5 +1,8 @@
 runtime: go116
 
+service: default
+main: ./api
+
 # set to smallest vm size
 instance_class: B1
 
