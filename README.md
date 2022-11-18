@@ -199,6 +199,17 @@ to run publisher and subscriber applications using docker. include the path to t
 ```
 docker run --env-file=./.env.local -p 8080:8080 data-dj-image
 ```
+### Docker commands
+- `docker build --platform=linux/amd64 -f Dockerfile.api -t dj-api-amd64 .`
+- `docker build --platform=linux/amd64 -f Dockerfile.taskHandler -t dj-taskhandler .`
+
+### Steps for Google Cloud Run
+- Follow instructions: [https://zahadum.notion.site/Google-Cloud-4c32dcbe1cfb4b479e8680e852ef0d84](https://zahadum.notion.site/Google-Cloud-4c32dcbe1cfb4b479e8680e852ef0d84)
+- Setup redis instance in Memorystore
+- Create VPC Connector for the VPC Network the redis instance is using
+- Create secrets (secret manager) to store passwords and tokens
+- Create Cloud Run Service and make sure to also add the following environment variables: REDISHOST and REDISPORT. You can find their respective values when looking at the previously created redis instance in the Memorystore
+- Make sure to also choose the correct connector when creating the new service
 
 send a request
 ```
