@@ -2,13 +2,27 @@ package main
 
 import (
 	"fmt"
-	"github.com/eth-library/dataset-dj/util"
+	"github.com/eth-library/dataset-dj/constants"
 	"log"
 	"net/http"
 
 	"github.com/eth-library/dataset-dj/dbutil"
 	"github.com/gin-gonic/gin"
 )
+
+func registerSource(c *gin.Context) {
+	var request sourceRequest
+	if err := c.BindJSON(&request); err != nil {
+		return
+	}
+	source := dbutil.Source{
+		ID:           generateID(constants.SourceIDs),
+		Name:         request.Name,
+		Organisation: request.Organisation,
+	}
+	dbutil.AddSourceToDB(runtime.MongoCtx, runtime.MongoClient, config.DbName, source)
+	c.IndentedJSON(http.StatusOK, source.ID)
+}
 
 // listOrders filtered by sources specified in the orderRequest
 // Need to rework the way of storing and retrieving Sources, in order to improve performance
@@ -23,13 +37,7 @@ func listOrders(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, err)
 		return
 	}
-	var fitleredOrdersIDs util.Set
-	var filteredOrders []dbutil.Order
-	for _, ord := range orders {
-		for _, src := range request.Sources {
-			if
-		}
-	}
+
 	c.IndentedJSON(http.StatusOK, orders)
 }
 

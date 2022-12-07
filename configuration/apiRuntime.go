@@ -3,6 +3,7 @@ package configuration
 import (
 	"context"
 	"fmt"
+	"github.com/eth-library/dataset-dj/constants"
 	"log"
 
 	"cloud.google.com/go/storage"
@@ -17,6 +18,8 @@ type RuntimeConfig struct {
 	MongoCtx    context.Context
 	CtxCancel   context.CancelFunc
 	ArchiveIDs  util.Set
+	SourceIDs   util.Set
+	OrderIDs    util.Set
 }
 
 func InitRuntimeConfig(sc *ApiConfig) *RuntimeConfig {
@@ -43,7 +46,17 @@ func InitRuntimeConfig(sc *ApiConfig) *RuntimeConfig {
 	}
 
 	// Load the list of already used archiveIDs when redeploying
-	archiveIDs, err := dbutil.LoadArchiveIDs(mongoCtx, mongoClient, sc.DbName)
+	archiveIDs, err := dbutil.LoadIDs(mongoCtx, mongoClient, sc.DbName, constants.ArchiveIDs)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Load the list of already used sourceIDs when redeploying
+	sourceIDs, err := dbutil.LoadIDs(mongoCtx, mongoClient, sc.DbName, constants.SourceIDs)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Load the list of already used orderIDs when redeploying
+	orderIDs, err := dbutil.LoadIDs(mongoCtx, mongoClient, sc.DbName, constants.OrderIDs)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -53,6 +66,8 @@ func InitRuntimeConfig(sc *ApiConfig) *RuntimeConfig {
 		MongoCtx:    mongoCtx,
 		CtxCancel:   cancel,
 		ArchiveIDs:  archiveIDs,
+		SourceIDs:   sourceIDs,
+		OrderIDs:    orderIDs,
 	}
 
 	return &rc

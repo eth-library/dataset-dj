@@ -3,6 +3,7 @@ package dbutil
 import (
 	"context"
 	"fmt"
+	"github.com/eth-library/dataset-dj/constants"
 	"log"
 	"time"
 
@@ -99,8 +100,7 @@ func InsertMany(ctx context.Context, client *mongo.Client, dbName string, col st
 }
 
 func AddArchiveToDB(ctx context.Context, client *mongo.Client, dbName string, archive MetaArchive) {
-	archiveBSON := archive.ToBSON()
-	result, err := InsertOne(ctx, client, dbName, "archives", archiveBSON)
+	result, err := InsertOne(ctx, client, dbName, "archives", archive.Convert())
 	if err != nil {
 		fmt.Println(err)
 	} else {
@@ -112,6 +112,15 @@ func AddArchiveToDB(ctx context.Context, client *mongo.Client, dbName string, ar
 		fmt.Println(err)
 	} else {
 		fmt.Println(result)
+	}
+}
+
+func AddSourceToDB(ctx context.Context, client *mongo.Client, dbName string, source Source) {
+	res, err := InsertOne(ctx, client, dbName, "sources", source)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(res)
 	}
 }
 
@@ -131,14 +140,6 @@ func FindArchiveInDB(ctx context.Context, client *mongo.Client, dbName, id strin
 // and update is of type interface this method returns UpdateResult and an error if any.
 func UpdateArchiveContent(ctx context.Context, client *mongo.Client, dbName string,
 	id string, contentUpdate interface{}, sourceUpdate interface{}) (*mongo.UpdateResult, error) {
-
-	// Update sources of the archive in "sources" collection used for orders
-	sourceCol := client.Database(dbName).Collection("sources")
-	_, err := sourceCol.UpdateByID(ctx, id, bson.D{{"$set",
-		bson.D{{"sources", sourceUpdate}}}})
-	if err != nil {
-		log.Println(err)
-	}
 
 	// select the database and the collection
 	collection := client.Database(dbName).Collection("archives")
@@ -162,45 +163,43 @@ func UpdateArchiveContent(ctx context.Context, client *mongo.Client, dbName stri
 	return result, err
 }
 
-// UpdateArchiveIDs updates the list of archiveIDs in the DB
-func UpdateArchiveIDs(ctx context.Context, client *mongo.Client, dbName string, update interface{}) (*mongo.UpdateResult, error) {
-	collection := client.Database(dbName).Collection("archiveIDs")
+func LoadArchiveSources(ctx context.Context, client *mongo.Client, dbName string, id string) ([]string, error) {
+	var sources []string
+	col := client.Database(dbName).Collection(constants.Archives)
+	opt := options.FindOne().SetProjection(bson.D{{"sources", 1}})
 
-	result, err := collection.UpdateByID(ctx, "id-file", bson.M{"$set": bson.M{"ids": update}})
+	err := col.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", id}}}}, opt).Decode(&sources)
+	return sources, err
+}
+
+// UpdateIDs updates the list of archiveIDs in the DB
+func UpdateIDs(ctx context.Context, client *mongo.Client, dbName string, collection string,
+	update interface{}) (*mongo.UpdateResult, error) {
+	col := client.Database(dbName).Collection(collection)
+
+	result, err := col.UpdateByID(ctx, constants.IdFile, bson.M{"$set": bson.M{"ids": update}})
 	return result, err
 }
 
-// LoadArchiveIDs retrieves a list of archiveIDs from the database
-func LoadArchiveIDs(ctx context.Context, client *mongo.Client, dbName string) (util.Set, error) {
+// LoadIDs retrieves a list of archiveIDs from the database
+func LoadIDs(ctx context.Context, client *mongo.Client, dbName string, collection string) (util.Set, error) {
 	var idStruct idFileWrapper
-	var archiveIDs util.Set
-
-	col := client.Database(dbName).Collection("archiveIDs")
-	err := col.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", "id-file"}}}}).Decode(&idStruct)
+	col := client.Database(dbName).Collection(collection)
+	err := col.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", constants.IdFile}}}}).Decode(&idStruct)
 	if err != nil {
 		if errText := "mongo: no documents in result"; err.Error() == errText {
-			emptySlice := make([]string, 0)
-			archiveIDs = util.SetFromSlice(emptySlice)
-			err = nil
+			return util.SetFromSlice(make([]string, 0)), nil
 		} else {
-			log.Println("LoadArchiveIDs error: ", err)
+			log.Println("LoadIDs error: ", err)
 		}
 	}
-	archiveIDs = util.SetFromSlice(idStruct.Ids)
-	return archiveIDs, err
-}
-
-func LoadSourcesByID(ctx context.Context, client *mongo.Client, dbName string, id string) ([]Source, error) {
-	var sources []Source
-	col := client.Database(dbName).Collection("sources")
-	err := col.FindOne(ctx, bson.D{{"$eq", id}}).Decode(&sources)
-	return sources, err
+	return util.SetFromSlice(idStruct.Ids), err
 }
 
 func LoadOrders(ctx context.Context, client *mongo.Client, dbName string) ([]Order, error) {
 	var orders []Order
 	var results bson.M
-	col := client.Database(dbName).Collection("orders")
+	col := client.Database(dbName).Collection(constants.Orders)
 	cursor, err := col.Find(ctx, bson.D{})
 	if err != nil {
 		log.Println("LoadOrders error: ", err)

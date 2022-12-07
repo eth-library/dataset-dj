@@ -1,6 +1,8 @@
 package main
 
-import db "github.com/eth-library/dataset-dj/dbutil"
+import (
+	db "github.com/eth-library/dataset-dj/dbutil"
+)
 
 // archiveRequest is the main data structure that is being received by the API when information or
 // modifications about archives are requested. Email simply is an email as string, ArchiveID is the UID of
@@ -23,5 +25,10 @@ type archiveRequest struct {
 }
 
 type orderRequest struct {
-	Sources []db.Source `json:"sources"`
+	Sources []string `json:"sources"`
+}
+
+type sourceRequest struct {
+	Name         string
+	Organisation string
 }

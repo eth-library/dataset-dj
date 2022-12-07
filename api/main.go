@@ -28,6 +28,7 @@ func setupRouter() *gin.Engine {
 		authorized.GET("/archive/:id", inspectArchive)
 		authorized.POST("/archive", handleArchive)
 		authorized.GET("/key/replace", replaceToken)
+		authorized.POST("/source", registerSource)
 	}
 	admin := router.Group("/admin") // for use by admins only
 	admin.Use(AuthMiddleware("admin"))
