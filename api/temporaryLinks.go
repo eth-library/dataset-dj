@@ -23,7 +23,7 @@ type singleUseLink struct {
 	Email      string    `bson:"email"`
 }
 
-// EmailRequestBody for binding email field in a a json body
+// EmailRequestBody for binding email field in a json body
 type EmailRequestBody struct {
 	Email string `json:"email"`
 }
@@ -51,12 +51,12 @@ func handleCreateLink(c *gin.Context) {
 	}
 
 	//to prevent duplicates
-	err = deleteExistingLinks(runfig.MongoCtx, runfig.MongoClient, email)
+	err = deleteExistingLinks(runtime.MongoCtx, runtime.MongoClient, email)
 	if err != nil {
 		log.Println("error deleting existing links: ", err)
 	}
 	//create link
-	linkID := createSingleUseLink(runfig.MongoCtx, runfig.MongoClient, email)
+	linkID := createSingleUseLink(runtime.MongoCtx, runtime.MongoClient, email)
 	url := c.Request.Host + "/key/claim/" + linkID
 
 	//TO DO: send email to recipient instead of return link
@@ -97,7 +97,7 @@ func publishAPILinkEmailTask(url string, recipientEmail string) error {
 		Body:     content,
 	}
 
-	err := redisutil.PublishTask(runfig.RdbClient, emailparts, "emails")
+	err := redisutil.PublishTask(runtime.RdbClient, emailparts, "emails")
 	if err != nil {
 		log.Println("ERROR while publishing email task:", err.Error())
 		return err

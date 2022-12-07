@@ -4,86 +4,14 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
-	"github.com/eth-library/dataset-dj/datastructs"
+	"github.com/eth-library/dataset-dj/util"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
-
-//	type metaArchive struct {
-//		ID    string `json:"id"`
-//		Files set    `json:"files"`
-//	}
-type MetaArchiveRaw struct {
-	ID          string   `json:"id"`
-	Files       []string `json:"files"`
-	TimeCreated string   `json:"timeCreated"`
-	TimeUpdated string   `json:"timeUpdated"`
-	Status      string   `json:"status"`
-	Source      string   `json:"source"`
-}
-
-// MetaArchive is the blueprint for the zip archives that will be created once the user initiates
-// the download process. Files is implemented as a set in order to avoid duplicate files within a
-// metaArchive
-type MetaArchive struct {
-	ID          string          `json:"id"`
-	Files       datastructs.Set `json:"files"`
-	TimeCreated string          `json:"timeCreated"`
-	TimeUpdated string          `json:"timeUpdated"`
-	Status      string          `json:"status"`
-	Source      string          `json:"source"`
-}
-
-func (raw MetaArchiveRaw) convert() MetaArchive {
-	var a MetaArchive
-	a.ID = raw.ID
-	a.Files = datastructs.SetFromSlice(raw.Files)
-	a.TimeCreated = raw.TimeCreated
-	a.TimeUpdated = raw.TimeUpdated
-	a.Status = raw.Status
-	a.Source = raw.Source
-
-	return a
-}
-
-// ToBSON converts the meta archive to binary JSON format
-func (a MetaArchive) ToBSON() bson.D {
-	var files bson.A
-	for _, v := range a.Files.ToSlice() {
-		files = append(files, v)
-	}
-	return bson.D{primitive.E{Key: "_id", Value: a.ID}, primitive.E{Key: "files", Value: files}}
-}
-
-type SourceBucket struct {
-	BucketID       string `json:"ID"`
-	BucketURL      string
-	BucketName     string
-	BucketPrefixes []string
-	BucketOrigin   string
-	Description    string
-	Owner          string
-}
-
-func (sb SourceBucket) ToBSON() bson.D {
-	var prefixes bson.A
-	for _, v := range sb.BucketPrefixes {
-		prefixes = append(prefixes, v)
-	}
-	res := bson.D{primitive.E{Key: "_id", Value: sb.BucketID},
-		primitive.E{Key: "URL", Value: sb.BucketURL},
-		primitive.E{Key: "Name", Value: sb.BucketName},
-		primitive.E{Key: "Prefixes", Value: prefixes},
-		primitive.E{Key: "Origin", Value: sb.BucketOrigin},
-		primitive.E{Key: "Description", Value: sb.Description},
-		primitive.E{Key: "Owner", Value: sb.Owner}}
-
-	return res
-}
 
 func BucketMapfromSlice(slice []SourceBucket) map[string]SourceBucket {
 	bucketMap := make(map[string]SourceBucket)
@@ -91,16 +19,6 @@ func BucketMapfromSlice(slice []SourceBucket) map[string]SourceBucket {
 		bucketMap[b.BucketURL+b.BucketName] = b
 	}
 	return bucketMap
-}
-
-type bucketFileWrapper struct {
-	_id     string         `json:"id"`
-	buckets []SourceBucket `json:"buckets"`
-}
-
-type idFileWrapper struct {
-	_id string   `json:"id"`
-	Ids []string `json:"ids"`
 }
 
 // CloseMDB is a user defined method to close resources.
@@ -188,13 +106,6 @@ func InsertMany(ctx context.Context, client *mongo.Client, dbName string, col st
 	return result, err
 }
 
-func NewMetaArchiveInDB(ctx context.Context, client *mongo.Client, dbName string, id string, files []string) MetaArchive {
-	// Create new metaArchive with random UID
-	archive := MetaArchive{ID: id, Files: datastructs.SetFromSlice(files)}
-	AddArchiveToDB(ctx, client, dbName, archive)
-	return archive
-}
-
 func AddArchiveToDB(ctx context.Context, client *mongo.Client, dbName string, archive MetaArchive) {
 	archiveBSON := archive.ToBSON()
 	result, err := InsertOne(ctx, client, dbName, "archives", archiveBSON)
@@ -207,19 +118,20 @@ func AddArchiveToDB(ctx context.Context, client *mongo.Client, dbName string, ar
 
 // FindArchiveInDB retrieves an archive from the MongoDB
 func FindArchiveInDB(ctx context.Context, client *mongo.Client, dbName, id string) (MetaArchive, error) {
-	var raw MetaArchiveRaw
+	var raw MetaArchiveDB
 	var archive MetaArchive
 	collection := client.Database(dbName).Collection("archives")
 	err := collection.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", id}}}}).Decode(&raw)
 	fmt.Println(err)
-	archive = raw.convert()
+	archive = raw.Convert()
 	archive.ID = id
 	return archive, err
 }
 
-// UpdateFilesOfArchive accepts client, context, database, collection, filter and update filter
+// UpdateArchiveContent accepts client, context, database, collection, filter and update filter
 // and update is of type interface this method returns UpdateResult and an error if any.
-func UpdateFilesOfArchive(ctx context.Context, client *mongo.Client, dbName string, id string, update interface{}) (*mongo.UpdateResult, error) {
+func UpdateArchiveContent(ctx context.Context, client *mongo.Client, dbName string,
+	id string, contentUpdate interface{}, sourceUpdate interface{}) (*mongo.UpdateResult, error) {
 
 	// select the database and the collection
 	collection := client.Database(dbName).Collection("archives")
@@ -227,7 +139,19 @@ func UpdateFilesOfArchive(ctx context.Context, client *mongo.Client, dbName stri
 	// A single document that match with the
 	// filter will get updated.
 	// update contains the filed which should get updated.
-	result, err := collection.UpdateByID(ctx, id, bson.D{{"$set", bson.D{{"files", update}}}})
+	result, err := collection.UpdateByID(ctx, id, bson.D{{"$set",
+		bson.D{{"content", contentUpdate}}}})
+	if err != nil {
+		log.Println(err)
+		return result, err
+	}
+	_, err = collection.UpdateByID(ctx, id, bson.D{{"$set",
+		bson.D{{"timeUpdated", time.Now().String()}}}})
+	if err != nil {
+		log.Println(err)
+	}
+	result, err = collection.UpdateByID(ctx, id, bson.D{{"$set",
+		bson.D{{"sources", sourceUpdate}}}})
 	return result, err
 }
 
@@ -240,23 +164,40 @@ func UpdateArchiveIDs(ctx context.Context, client *mongo.Client, dbName string, 
 }
 
 // LoadArchiveIDs retrieves a list of archiveIDs from the database
-func LoadArchiveIDs(ctx context.Context, client *mongo.Client, dbName string) (datastructs.Set, error) {
+func LoadArchiveIDs(ctx context.Context, client *mongo.Client, dbName string) (util.Set, error) {
 	var idStruct idFileWrapper
-	var archiveIDs datastructs.Set
+	var archiveIDs util.Set
 
 	col := client.Database(dbName).Collection("archiveIDs")
 	err := col.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", "id-file"}}}}).Decode(&idStruct)
 	if err != nil {
 		if errText := "mongo: no documents in result"; err.Error() == errText {
 			emptySlice := make([]string, 0)
-			archiveIDs = datastructs.SetFromSlice(emptySlice)
+			archiveIDs = util.SetFromSlice(emptySlice)
 			err = nil
 		} else {
 			log.Println("LoadArchiveIDs error: ", err)
 		}
 	}
-	archiveIDs = datastructs.SetFromSlice(idStruct.Ids)
+	archiveIDs = util.SetFromSlice(idStruct.Ids)
 	return archiveIDs, err
+}
+
+func LoadOrders(ctx context.Context, client *mongo.Client, dbName string) ([]Order, error) {
+	var orders []Order
+	var results bson.M
+	col := client.Database(dbName).Collection("orders")
+	cursor, err := col.Find(ctx, bson.D{})
+	if err != nil {
+		log.Println("LoadOrders error: ", err)
+	}
+	if err = cursor.All(ctx, &results); err != nil {
+		log.Println("LoadOrders error: ", err)
+	}
+	for _, res := range results {
+		orders = append(orders, res.(Order))
+	}
+	return orders, err
 }
 
 // LoadSourceBuckets retrieves a list of archiveIDs from the db

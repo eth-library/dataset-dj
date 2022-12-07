@@ -21,7 +21,8 @@ type ServerConfig struct {
 	SourceAPIURL         string // URL to API giving access to provided files
 	DbConnector          string // link to connect to mongoDB database
 	DbName               string
-	RdbAddr              string // what address and port redis should connect to
+	RdbHost              string // what address redis should connect to
+	RdbPort				 string // what port redis should connect to
 	Port                 string // port to start api listening on
 	Mode                 string // mode that gin is running in (use as mode for entire application)
 	ServiceEmailAddress  string // email address for sending the form and download link
@@ -42,7 +43,8 @@ func InitServerConfig() *ServerConfig {
 		SourceAPIURL:         os.Getenv("SOURCE_API_URL"),        // for example: "",
 		DbConnector:          os.Getenv("DB_CONNECTOR"),          // for example: "mongodb+srv://username:password@cluster.jzmhu.mongodb.net/collection?retryWrites=true&w=majority",
 		DbName:               os.Getenv("DB_NAME"),               // for example: main or test
-		RdbAddr:              os.Getenv("Rdb_ADDR"),              // for example: "0.0.0.0:6379" or "localhost:6379",
+		RdbHost:              os.Getenv("REDISHOST"),             // for example: "0.0.0.0", "10.8.0.1" or "localhost",
+		RdbPort:			  os.Getenv("REDISPORT"),			  // Usually 6379 for Redis
 		Port:                 os.Getenv("PORT"),                  // retrieve the PORT env variable for usage within the google cloud,
 		Mode:                 os.Getenv("GIN_MODE"),              // for example: "debug" or "production"
 		ServiceEmailAddress:  os.Getenv("EMAIL_ADDRESS"),         // for example: "datadj.service@gmail.com"

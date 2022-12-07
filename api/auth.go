@@ -28,7 +28,7 @@ type authHeader struct {
 type APIKey struct {
 	HashedToken string `bson:"hashedToken,omitempty"`
 	CreatedDate string `bson:"createdDate,omitempty"`
-	Permission  string `bson:"permission,omitempty"` //service, user or admin
+	Permission  string `bson:"permission,omitempty"` //service, system, user or admin
 }
 
 type tokenResponse struct {
@@ -37,7 +37,7 @@ type tokenResponse struct {
 }
 
 type tokenRequest struct {
-	APIKey string `json: "apiKey"`
+	APIKey string `json:"apiKey"`
 }
 
 type dbCollection interface {
@@ -51,7 +51,7 @@ type dbCollection interface {
 
 // colHandle returns a reference to a mongodb collection handle
 func getColHandle(collectionName string) *mongo.Collection {
-	db := runfig.MongoClient.Database(config.DbName)
+	db := runtime.MongoClient.Database(config.DbName)
 	collection := db.Collection(collectionName)
 	return collection
 }
@@ -93,28 +93,17 @@ func AuthMiddleware(requiredPermission string) gin.HandlerFunc {
 	}
 }
 
-func claimKey(c *gin.Context) {
-	linkID := c.Param("id")
-	linkValid, err := validateTokenLink(runfig.MongoCtx, runfig.MongoClient, linkID)
-	if err != nil {
-		log.Println("ERROR validating Token Link:", err.Error())
-		c.IndentedJSON(http.StatusInternalServerError, "")
-		return
-	}
-	if linkValid != true {
-		c.IndentedJSON(http.StatusBadRequest, "invalid link")
-		return
-	}
+func setupAPIToken(c *gin.Context, tokenPermission string) {
+	token, err := CreateToken(runtime.MongoCtx, runtime.MongoClient, tokenPermission)
 
-	tokenPermission := "service"
-	token, err := CreateToken(runfig.MongoCtx, runfig.MongoClient, tokenPermission)
-	_ = expireLink(runfig.MongoCtx, runfig.MongoClient, linkID)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, "unable to create APIKey for Taskhandler")
+	}
 
 	resp := tokenResponse{
 		APIKey:  token,
 		Message: "store this API Key securely. It cannot be retrieved again. Do not disclose it to anyone. Use the /key/replace endpoint to replace this key periodically or if it is compromised",
 	}
-	log.Printf("info: APIKey claimed from temp link: %v", linkID)
 	c.IndentedJSON(http.StatusOK, resp)
 }
 
@@ -123,7 +112,7 @@ func deleteToken(col dbCollection, token string) error {
 	existingHash := hashAPIToken(token)
 
 	result, err := col.DeleteMany(
-		runfig.MongoCtx,
+		runtime.MongoCtx,
 		bson.M{"hashedToken": existingHash},
 	)
 	if err != nil {
@@ -228,7 +217,7 @@ func CreateToken(ctx context.Context, client *mongo.Client, permission string) (
 // the token used in the Authorization is scheduled to be deleted
 func replaceToken(c *gin.Context) {
 	tokenPermission := "service"
-	newToken, err := CreateToken(runfig.MongoCtx, runfig.MongoClient, tokenPermission)
+	newToken, err := CreateToken(runtime.MongoCtx, runtime.MongoClient, tokenPermission)
 	if err != nil {
 		log.Println("error creating token: ", err)
 		c.AbortWithStatus(http.StatusInternalServerError)
@@ -262,7 +251,7 @@ func revokeToken(c *gin.Context) {
 		return
 	}
 
-	// setTokenToExpire(runfig.MongoCtx, runfig.MongoClient, oldToken)
+	// setTokenToExpire(runtime.MongoCtx, runtime.MongoClient, oldToken)
 	col := getColHandle("apiKeys")
 	err = deleteToken(col, token.APIKey)
 	if err != nil {
@@ -366,7 +355,7 @@ func validateAPIToken(collection dbCollection, token string) (bool, string) {
 	hashedToken := hashAPIToken(token)
 
 	// collection := client.Database(config.DbName).Collection("apiKeys")
-	result := collection.FindOne(runfig.MongoCtx, bson.M{"hashedToken": hashedToken})
+	result := collection.FindOne(runtime.MongoCtx, bson.M{"hashedToken": hashedToken})
 	err := result.Err()
 
 	noDocs := "ErrNoDocuments"

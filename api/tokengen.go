@@ -10,12 +10,12 @@ func generateToken() string {
 	newUID := uuid.New().String()[:8]
 
 	// Regenerate new UUIDs as long as there are collisions
-	for ok := runfig.ArchiveIDs.Check(newUID); ok; {
+	for ok := runtime.ArchiveIDs.Check(newUID); ok; {
 		newUID = uuid.New().String()[:8]
 	}
 
-	runfig.ArchiveIDs.Add(newUID)
-	dbutil.UpdateArchiveIDs(runfig.MongoCtx, runfig.MongoClient, config.DbName, runfig.ArchiveIDs.ToSlice())
+	runtime.ArchiveIDs.Add(newUID)
+	dbutil.UpdateArchiveIDs(runtime.MongoCtx, runtime.MongoClient, config.DbName, runtime.ArchiveIDs.ToSlice())
 
 	return newUID
 }

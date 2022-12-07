@@ -3,9 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/eth-library/dataset-dj/dbutil"
+	"github.com/eth-library/dataset-dj/util"
+	"github.com/gin-gonic/gin"
 	"google.golang.org/api/iterator"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"net/mail"
 	"regexp"
 	"time"
@@ -41,6 +45,51 @@ func emailIsValid(email string) (string, error) {
 	return e.Address, nil
 }
 
+func createOrderForRequest(c *gin.Context, request archiveRequest) {
+	order := dbutil.Order{
+		ArchiveID: request.ArchiveID,
+		Email:     request.Email,
+		Date:      time.Now().String(),
+	}
+	res, err := dbutil.InsertOne(runtime.MongoCtx, runtime.MongoClient, config.DbName, "orders", order)
+	if err != nil {
+		log.Printf("Failed to create order for Archive (id: %s)", request.ArchiveID)
+	}
+	order.OrderID = res.InsertedID.(string)
+	c.IndentedJSON(http.StatusOK, order)
+}
+
+func createArchiveForRequest(request archiveRequest) dbutil.MetaArchive {
+	content, sources := dbutil.Unify(util.Mapping(request.Content, dbutil.DBToFileGroup))
+	// Create new metaArchive with random UID
+	newArchive := dbutil.MetaArchive{
+		ID:          generateToken(),
+		Content:     content,
+		TimeCreated: time.Now().String(),
+		TimeUpdated: "",
+		Status:      "opened",
+		Sources:     sources,
+	}
+	dbutil.AddArchiveToDB(runtime.MongoCtx, runtime.MongoClient, config.DbName, newArchive)
+	return newArchive
+}
+
+func updateArchiveForRequest(c *gin.Context, request archiveRequest) {
+	archive, err := dbutil.FindArchiveInDB(runtime.MongoCtx, runtime.MongoClient, config.DbName, request.ArchiveID)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, "archive not found")
+	} else {
+		unionFileGroups, sources := dbutil.Union(archive.Content, util.Mapping(request.Content, dbutil.DBToFileGroup))
+		_, err = dbutil.UpdateArchiveContent(runtime.MongoCtx, runtime.MongoClient, config.DbName, request.ArchiveID,
+			unionFileGroups, sources)
+		if err != nil {
+			log.Printf("Failed to update content of Archive (id: %s)", request.ArchiveID)
+		}
+		request.Content = util.Mapping(unionFileGroups, dbutil.FileGroupToDB)
+		c.IndentedJSON(http.StatusOK, request)
+	}
+}
+
 // retrieve file names from local storage, from cloud storage and also from storages that
 // are connected via API. This function acts as layer of abstraction such that the function
 // calls in handlers.go don't need to be modified.
@@ -53,8 +102,8 @@ func retrieveAllFiles() ([]string, error) {
 	}
 	allAvailableFiles = append(allAvailableFiles, localFiles...)
 
-	if len(runfig.SourceBucketList) > 0 || override {
-		cloudFiles, err := retrieveFilesCloud(runfig.StorageClient, config)
+	if len(runtime.SourceBucketList) > 0 || override {
+		cloudFiles, err := retrieveFilesCloud(runtime.StorageClient, config)
 		if err != nil {
 			return allAvailableFiles, err
 		}

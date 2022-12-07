@@ -6,21 +6,17 @@ import (
 	"log"
 
 	"cloud.google.com/go/storage"
-	"github.com/eth-library/dataset-dj/datastructs"
 	"github.com/eth-library/dataset-dj/dbutil"
-	"github.com/eth-library/dataset-dj/redisutil"
-	"github.com/go-redis/redis"
+	"github.com/eth-library/dataset-dj/util"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // RuntimeConfig holds pointers to storage clients and some in memory lists
 type RuntimeConfig struct {
-	StorageClient    *storage.Client // client used to connect to the storage in order to read and write files
-	RdbClient        *redis.Client
 	MongoClient      *mongo.Client
 	MongoCtx         context.Context
 	CtxCancel        context.CancelFunc
-	ArchiveIDs       datastructs.Set
+	ArchiveIDs       util.Set
 	SourceBucketList []dbutil.SourceBucket
 	SourceBuckets    map[string]dbutil.SourceBucket
 }
@@ -32,9 +28,6 @@ func InitRuntimeConfig(sc *ServerConfig) *RuntimeConfig {
 		log.Fatal(err)
 	}
 	defer storageClient.Close()
-
-	// connect to redis instance
-	rdbClient := redisutil.InitRedisConnection(sc.RdbAddr)
 
 	// Get Client, Context, CalcelFunc and
 	// err from connect method.
@@ -69,8 +62,6 @@ func InitRuntimeConfig(sc *ServerConfig) *RuntimeConfig {
 	}
 
 	rc := RuntimeConfig{
-		StorageClient:    storageClient,
-		RdbClient:        rdbClient,
 		MongoClient:      mongoClient,
 		MongoCtx:         mongoCtx,
 		CtxCancel:        cancel,

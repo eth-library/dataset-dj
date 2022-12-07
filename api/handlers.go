@@ -4,75 +4,61 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
-	"github.com/eth-library/dataset-dj/datastructs"
 	"github.com/eth-library/dataset-dj/dbutil"
 	"github.com/eth-library/dataset-dj/redisutil"
 
 	"github.com/gin-gonic/gin"
 )
 
-// archiveRequest is the main data structure that is being received by the API when information or
-// modifications about archives are requested. Email simply is an email as string, ArchiveID is the UID of
-// a metaArchive as string and Files is a list of fileNames as strings. Possible combinations:
-// 1. Email and ArchiveID set, Files empty -> Retrieve metaArchive with ArchiveID, create the zip archive
-// 	  and send download link to Email
-// 2. ArchiveID and Files set, Email empty -> Add fileNames in Files to metaArchive with ArchiveID
-// 3. Email and Files set, ArchiveID empty -> Create new metaArchive containing the fileNames from Files,
-//	  immediatly retrieve the files from the collection and create the zip archive and send the download
-//    link to Email
-// 4. Files set, Email and ArchiveID empty -> Create new metaArchive from the fileNames in Files
-//
-// The function handleArchive() implements the logic to identify the different cases and to act accordingly
-
-type archiveRequest struct {
-	Email     string   `json:"email"`
-	ArchiveID string   `json:"archiveID"`
-	Files     []string `json:"files"`
-}
-
-func getAvailableFiles(c *gin.Context) {
-	availableFiles, err := retrieveAllFiles()
-
+// listArchives retrieves all MetaArchive headers from the database
+func listOrders(c *gin.Context) {
+	requests, err := dbutil.LoadOrders(runtime.MongoCtx, runtime.MongoClient, config.DbName)
 	if err != nil {
-		log.Fatal(err)
-		c.IndentedJSON(http.StatusBadRequest, "an error occured while listing the files")
+		log.Println("ERROR retrieving requests:", err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err)
+		return
 	}
-
-	c.IndentedJSON(http.StatusOK, availableFiles)
+	c.IndentedJSON(http.StatusOK, requests)
 }
 
-// handler for inspecting the current contents of a metaArchive
+// claimKey for API usage with "service" permissions
+func claimKey(c *gin.Context) {
+	linkID := c.Param("id")
+	linkValid, err := validateTokenLink(runtime.MongoCtx, runtime.MongoClient, linkID)
+	if err != nil {
+		log.Println("ERROR validating Token Link:", err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, "")
+		return
+	}
+	if linkValid != true {
+		c.IndentedJSON(http.StatusBadRequest, "invalid link")
+		return
+	}
+	setupAPIToken(c, "service")
+}
+
+// registerTaskHandler and return an APIKey for it to access the "system" resources
+func registerTaskHandler(c *gin.Context) {
+	setupAPIToken(c, "system")
+}
+
+// inspectArchive to receive its current contents
 func inspectArchive(c *gin.Context) {
 	id := c.Param("id") // bind parameter id provided by the gin.Context object
 
-	arch, err := dbutil.FindArchiveInDB(runfig.MongoCtx, runfig.MongoClient, config.DbName, id)
+	arch, err := dbutil.FindArchiveInDB(runtime.MongoCtx, runtime.MongoClient, config.DbName, id)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, "archive not found")
 	} else {
 		c.IndentedJSON(http.StatusOK, arch)
 	}
-
-	// Check whether metaArchive exists and if so convert its list of filenames which is internally
-	// saved as a set to a slice such that it can be represented in JSON
-	// if arch, ok := archives[id]; ok {
-	// 	c.IndentedJSON(http.StatusOK, struct {
-	// 		ID    string   `json:"id"`
-	// 		Files []string `json:"files"`
-	// 	}{
-	// 		ID:    arch.ID,
-	// 		Files: arch.Files.toSlice()})
-	// } else {
-	// 	c.IndentedJSON(http.StatusBadRequest, "archive not found")
-	// }
 }
 
 // handler for the /archive API endpoint that receives an archiveRequest. See archiveRequest for more
 // information about the possible combinations that are being switched by this function.
 func handleArchive(c *gin.Context) {
 	var request archiveRequest
-
 	if err := c.BindJSON(&request); err != nil {
 		return
 	}
@@ -86,96 +72,33 @@ func handleArchive(c *gin.Context) {
 	}
 
 	if request.Email != "" && request.ArchiveID != "" { // Email and ArchiveID set
-		archive, err := dbutil.FindArchiveInDB(runfig.MongoCtx, runfig.MongoClient, config.DbName, request.ArchiveID)
-		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, "archive not found")
-		} else {
-			archiveTask := request
-			archiveTask.Files = archive.Files.ToSlice()
-
-			err := redisutil.PublishArchiveTask(runfig.RdbClient, archiveTask)
-			if err != nil {
-				fmt.Println("error publishing archive task", err)
-				c.IndentedJSON(http.StatusInternalServerError, "could not request archive download")
-				return
-			}
-			c.IndentedJSON(http.StatusOK, archiveTask)
+		if !runtime.ArchiveIDs.Check(request.ArchiveID) {
+			c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("Archive (id: %s) does not exist",
+				request.ArchiveID))
 		}
-
-		// if archive, ok := archives[request.ArchiveID]; ok {
-		// 	downloadReq := request
-		// 	downloadReq.Files = archive.Files.toSlice()
-		// 	downloadFiles(downloadReq)
-		// 	c.IndentedJSON(http.StatusOK, downloadReq)
-		// } else {
-		// 	c.IndentedJSON(http.StatusBadRequest, "archive not found")
-		// 	return
-		// }
-
-	} else if request.ArchiveID != "" && len(request.Files) != 0 { // ArchiveID and Files set, Email empty
-		archive, err := dbutil.FindArchiveInDB(runfig.MongoCtx, runfig.MongoClient, config.DbName, request.ArchiveID)
-		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, "archive not found")
-		} else {
-			fileSet := datastructs.SetFromSlice(request.Files)
-			unionSet := datastructs.SetUnion(fileSet, archive.Files)
-			dbutil.UpdateFilesOfArchive(runfig.MongoCtx, runfig.MongoClient, config.DbName, request.ArchiveID, unionSet.ToSlice())
-			request.Files = unionSet.ToSlice()
-			c.IndentedJSON(http.StatusOK, request)
-		}
-
-		// if archive, ok := archives[request.ArchiveID]; ok {
-		// 	fileSet := setFromSlice(request.Files)
-		// 	archive.Files = setUnion(archive.Files, fileSet)
-		// 	archives[request.ArchiveID] = archive
-		// 	c.IndentedJSON(http.StatusOK, request)
-		// } else {
-		// 	c.IndentedJSON(http.StatusBadRequest, "archive not found")
-		// 	return
-		// }
-	} else if request.Email != "" && len(request.Files) != 0 { // Email and Files set, ArchiveID empty
-
-		// Create new metaArchive with random UID
-		newArchive := dbutil.MetaArchive{
-			ID:          generateToken(),
-			Files:       datastructs.SetFromSlice(request.Files),
-			TimeCreated: time.Now().String(),
-			TimeUpdated: "",
-			Status:      "opened",
-			Source:      "local",
-		}
-
-		dbutil.AddArchiveToDB(runfig.MongoCtx, runfig.MongoClient, config.DbName, newArchive)
-
-		archiveTask := request
-		archiveTask.ArchiveID = newArchive.ID
-
-		err := redisutil.PublishArchiveTask(runfig.RdbClient, archiveTask)
-		if err != nil {
-			fmt.Println("error publishing archive task", err)
-			c.IndentedJSON(http.StatusInternalServerError, "could not request archive creation")
-			return
-		}
-		c.IndentedJSON(http.StatusOK, newArchive)
-
-	} else if len(request.Files) != 0 { // Files set, Email and ArchiveID empty
-
-		// Create new metaArchive with random UID
-		newArchive := dbutil.MetaArchive{
-			ID:          generateToken(),
-			Files:       datastructs.SetFromSlice(request.Files),
-			TimeCreated: time.Now().String(),
-			TimeUpdated: "",
-			Status:      "opened",
-			Source:      "local",
-		}
-
-		dbutil.AddArchiveToDB(runfig.MongoCtx, runfig.MongoClient, config.DbName, newArchive)
-
+		createOrderForRequest(c, request)
+	} else if request.ArchiveID != "" && len(request.Content) != 0 { // ArchiveID and Files set, Email empty
+		updateArchiveForRequest(c, request)
+	} else if request.Email != "" && len(request.Content) != 0 { // Email and Files set, ArchiveID empty
+		createArchiveForRequest(request)
+		createOrderForRequest(c, request)
+	} else if len(request.Content) != 0 { // Files set, Email and ArchiveID empty
+		newArchive := createArchiveForRequest(request)
 		c.IndentedJSON(http.StatusCreated, newArchive)
 	} else {
 		c.IndentedJSON(http.StatusBadRequest, "invalid request format")
 	}
+}
+
+func getAvailableFiles(c *gin.Context) {
+	availableFiles, err := retrieveAllFiles()
+
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, "an error occured while listing the files")
+		log.Fatal(err)
+	}
+
+	c.IndentedJSON(http.StatusOK, availableFiles)
 }
 
 func addSourceBucket(c *gin.Context) {
@@ -186,7 +109,7 @@ func addSourceBucket(c *gin.Context) {
 		return
 	}
 
-	err := redisutil.PublishSourceBucketTask(runfig.RdbClient, bucket)
+	err := redisutil.PublishSourceBucketTask(runtime.RdbClient, bucket)
 	if err != nil {
 		fmt.Println("error publishing source bucket task", err)
 		c.IndentedJSON(http.StatusInternalServerError, "could not request source bucket creation")

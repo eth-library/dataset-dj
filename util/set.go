@@ -1,4 +1,4 @@
-package datastructs
+package util
 
 // Set struct has one attribute elements that holds true when an element is in the set
 type Set struct {
@@ -46,7 +46,7 @@ func SetFromSlice(slice []string) Set {
 	return s
 }
 
-// return a new set as the union of two sets
+// SetUnion returns a new set as the union of two sets
 func SetUnion(s1, s2 Set) Set {
 	newSet := Set{Elems: map[string]bool{}}
 	for e := range s1.Elems {
