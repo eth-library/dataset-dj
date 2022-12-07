@@ -21,3 +21,7 @@ type archiveRequest struct {
 	Content   []db.FileGroupDB `json:"content"`
 	Meta      string           `json:"meta"`
 }
+
+type orderRequest struct {
+	Sources []db.Source `json:"sources"`
+}

@@ -13,15 +13,13 @@ import (
 
 // RuntimeConfig holds pointers to storage clients and some in memory lists
 type RuntimeConfig struct {
-	MongoClient      *mongo.Client
-	MongoCtx         context.Context
-	CtxCancel        context.CancelFunc
-	ArchiveIDs       util.Set
-	SourceBucketList []dbutil.SourceBucket
-	SourceBuckets    map[string]dbutil.SourceBucket
+	MongoClient *mongo.Client
+	MongoCtx    context.Context
+	CtxCancel   context.CancelFunc
+	ArchiveIDs  util.Set
 }
 
-func InitRuntimeConfig(sc *ServerConfig) *RuntimeConfig {
+func InitRuntimeConfig(sc *ApiConfig) *RuntimeConfig {
 	ctx := context.Background()
 	storageClient, err := storage.NewClient(ctx)
 	if err != nil {
@@ -50,24 +48,12 @@ func InitRuntimeConfig(sc *ServerConfig) *RuntimeConfig {
 		log.Fatal(err)
 	}
 
-	sourceBucketList, err := dbutil.LoadSourceBuckets(mongoCtx, mongoClient, sc.DbName)
-	sourceBuckets := dbutil.BucketMapfromSlice(sourceBucketList)
-	if err != nil {
-		if sc.Mode != "test" {
-			log.Println("WARNING: no sourceBucketList found: ", err)
-		}
-		// init as empty slices and maps to avoid nil pointer errors
-		sourceBucketList = []dbutil.SourceBucket{}
-		sourceBuckets = map[string]dbutil.SourceBucket{}
-	}
-
 	rc := RuntimeConfig{
-		MongoClient:      mongoClient,
-		MongoCtx:         mongoCtx,
-		CtxCancel:        cancel,
-		ArchiveIDs:       archiveIDs,
-		SourceBucketList: sourceBucketList,
-		SourceBuckets:    sourceBuckets}
+		MongoClient: mongoClient,
+		MongoCtx:    mongoCtx,
+		CtxCancel:   cancel,
+		ArchiveIDs:  archiveIDs,
+	}
 
 	return &rc
 

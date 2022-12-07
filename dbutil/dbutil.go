@@ -13,14 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-func BucketMapfromSlice(slice []SourceBucket) map[string]SourceBucket {
-	bucketMap := make(map[string]SourceBucket)
-	for _, b := range slice {
-		bucketMap[b.BucketURL+b.BucketName] = b
-	}
-	return bucketMap
-}
-
 // CloseMDB is a user defined method to close resources.
 // This method closes mongoDB connection and cancel context.
 func CloseMDB(client *mongo.Client, ctx context.Context, cancel context.CancelFunc) {
@@ -114,6 +106,13 @@ func AddArchiveToDB(ctx context.Context, client *mongo.Client, dbName string, ar
 	} else {
 		fmt.Println(result)
 	}
+	sourceObj := bson.D{{"_id", archive.ID}, {"sources", archive.Sources}}
+	result, err = InsertOne(ctx, client, dbName, "sources", sourceObj)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(result)
+	}
 }
 
 // FindArchiveInDB retrieves an archive from the MongoDB
@@ -132,6 +131,14 @@ func FindArchiveInDB(ctx context.Context, client *mongo.Client, dbName, id strin
 // and update is of type interface this method returns UpdateResult and an error if any.
 func UpdateArchiveContent(ctx context.Context, client *mongo.Client, dbName string,
 	id string, contentUpdate interface{}, sourceUpdate interface{}) (*mongo.UpdateResult, error) {
+
+	// Update sources of the archive in "sources" collection used for orders
+	sourceCol := client.Database(dbName).Collection("sources")
+	_, err := sourceCol.UpdateByID(ctx, id, bson.D{{"$set",
+		bson.D{{"sources", sourceUpdate}}}})
+	if err != nil {
+		log.Println(err)
+	}
 
 	// select the database and the collection
 	collection := client.Database(dbName).Collection("archives")
@@ -183,6 +190,13 @@ func LoadArchiveIDs(ctx context.Context, client *mongo.Client, dbName string) (u
 	return archiveIDs, err
 }
 
+func LoadSourcesByID(ctx context.Context, client *mongo.Client, dbName string, id string) ([]Source, error) {
+	var sources []Source
+	col := client.Database(dbName).Collection("sources")
+	err := col.FindOne(ctx, bson.D{{"$eq", id}}).Decode(&sources)
+	return sources, err
+}
+
 func LoadOrders(ctx context.Context, client *mongo.Client, dbName string) ([]Order, error) {
 	var orders []Order
 	var results bson.M
@@ -198,20 +212,4 @@ func LoadOrders(ctx context.Context, client *mongo.Client, dbName string) ([]Ord
 		orders = append(orders, res.(Order))
 	}
 	return orders, err
-}
-
-// LoadSourceBuckets retrieves a list of archiveIDs from the db
-func LoadSourceBuckets(ctx context.Context, client *mongo.Client, dbName string) ([]SourceBucket, error) {
-	var sourceStruct bucketFileWrapper
-	col := client.Database(dbName).Collection("sourceBuckets")
-	err := col.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", "bucket-file"}}}}).Decode(&sourceStruct)
-	return sourceStruct.buckets, err
-}
-
-// UpdateSourceBuckets updates the list of archiveIDs in the DB
-func UpdateSourceBuckets(ctx context.Context, client *mongo.Client, dbName string, update interface{}) (*mongo.UpdateResult, error) {
-	collection := client.Database(dbName).Collection("sourceBuckets")
-
-	result, err := collection.UpdateByID(ctx, "bucket-file", bson.M{"$set": bson.M{"buckets": update}})
-	return result, err
 }

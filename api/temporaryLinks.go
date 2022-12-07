@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	redisutil "github.com/eth-library/dataset-dj/redisutil"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -160,9 +159,6 @@ func deleteExistingLinks(ctx context.Context, client *mongo.Client, email string
 	result, err := collection.DeleteMany(
 		ctx,
 		bson.M{"email": email},
-		// bson.D{
-		// 	{"$set", bson.M{"used": true, "expireAt": time.Now()}},
-		// },
 	)
 	fmt.Printf("deleted %v existing temp links\n", result.DeletedCount)
 	return err

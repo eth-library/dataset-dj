@@ -15,10 +15,12 @@ type Source struct {
 }
 
 type Order struct {
-	OrderID   string `json:"orderID" bson:"_id,omitempty"`
-	ArchiveID string `json:"archiveID" bson:"archiveID"`
-	Email     string `json:"email" bson:"email"`
-	Date      string `json:"date" bson:"date"`
+	OrderID   string   `json:"orderID" bson:"_id,omitempty"`
+	ArchiveID string   `json:"archiveID" bson:"archiveID"`
+	Email     string   `json:"email" bson:"email"`
+	Date      string   `json:"date" bson:"date"`
+	Status    string   `json:"status" bson:"status"`
+	Sources   []Source `json:"sources" bson:"sources"`
 }
 
 type FileGroup struct {
@@ -114,27 +116,27 @@ func (arch MetaArchive) Convert() MetaArchiveDB {
 // ToBSON converts MetaArchive to binary JSON format
 func (arch MetaArchive) ToBSON() bson.D {
 	return bson.D{
-		primitive.E{
-			Key:   "_id",
-			Value: arch.ID},
-		primitive.E{
-			Key:   "content",
-			Value: util.Mapping(arch.Content, FileGroupToDB)},
-		primitive.E{
-			Key:   "meta",
-			Value: arch.Meta},
-		primitive.E{
-			Key:   "timeCreated",
-			Value: arch.TimeCreated},
-		primitive.E{
-			Key:   "timeUpdated",
-			Value: arch.TimeUpdated},
-		primitive.E{
-			Key:   "status",
-			Value: arch.Status},
-		primitive.E{
-			Key:   "sources",
-			Value: arch.Sources}}
+		{
+			"_id",
+			arch.ID},
+		{
+			"content",
+			util.Mapping(arch.Content, FileGroupToDB)},
+		{
+			"meta",
+			arch.Meta},
+		{
+			"timeCreated",
+			arch.TimeCreated},
+		{
+			"timeUpdated",
+			arch.TimeUpdated},
+		{
+			"status",
+			arch.Status},
+		{
+			"sources",
+			arch.Sources}}
 }
 
 // MetaArchiveDB is a Wrapper type for MetaArchive as the custom type util.Set cannot be saved to the

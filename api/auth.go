@@ -44,9 +44,6 @@ type dbCollection interface {
 	DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
 	DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
 	FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) *mongo.SingleResult
-	// InsertOne(ctx context.Context, doc interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error)
-	// InsertMany(ctx context.Context, docs []interface{}, opts ...*options.InsertManyOptions) (*mongo.InsertManyResult, error)
-	// UpdateOne(ctx context.Context, filter interface{}, doc interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
 }
 
 // colHandle returns a reference to a mongodb collection handle
@@ -127,15 +124,6 @@ func deleteToken(col dbCollection, token string) error {
 		return fmt.Errorf("encountered error while deleting apiKey")
 	}
 	log.Printf("Deleted %v apiKeys\n", result.DeletedCount)
-
-	// collection.DeleteOne(ctx context.Context, filter interface{}) (*mongo.DeleteResult, error)
-	// collection.DeleteMany(ctx context.Context, doc interface{}) (*mongo.DeleteResult, error)
-	// collection.InsertOne(ctx context.Context, doc interface{}) (*mongo.InsertOneResult, error)
-	// collection.InsertMany(ctx context.Context, docs []interface{}) (*mongo.InsertManyResult, error)
-	// collection.UpdateOne(ctx context.Context, filter interface{}, doc interface{}) (*mongo.UpdateResult, error)
-	// collection.UpdateMany()
-	// collection.Find()
-	// collection.FindOne()
 
 	return nil
 }
@@ -275,11 +263,11 @@ func revokeToken(c *gin.Context) {
 func getTokenFromHeader(c *gin.Context) (string, error) {
 	h := authHeader{}
 	if err := c.ShouldBindHeader(&h); err != nil {
-		return "", errors.New("Must include Authorization header with format `Bearer {token}`")
+		return "", errors.New("must include Authorization header with format `Bearer {token}`")
 	}
 	parts := strings.Split(h.Authorization, "Bearer ")
 	if len(parts) != 2 {
-		return "", errors.New("Must include Authorization header with format `Bearer {token}`")
+		return "", errors.New("must include Authorization header with format `Bearer {token}`")
 	}
 	return strings.TrimSpace(parts[1]), nil
 }
@@ -354,7 +342,6 @@ func validateAPIToken(collection dbCollection, token string) (bool, string) {
 
 	hashedToken := hashAPIToken(token)
 
-	// collection := client.Database(config.DbName).Collection("apiKeys")
 	result := collection.FindOne(runtime.MongoCtx, bson.M{"hashedToken": hashedToken})
 	err := result.Err()
 

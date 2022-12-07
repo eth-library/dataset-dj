@@ -2,24 +2,35 @@ package main
 
 import (
 	"fmt"
+	"github.com/eth-library/dataset-dj/util"
 	"log"
 	"net/http"
 
 	"github.com/eth-library/dataset-dj/dbutil"
-	"github.com/eth-library/dataset-dj/redisutil"
-
 	"github.com/gin-gonic/gin"
 )
 
-// listArchives retrieves all MetaArchive headers from the database
+// listOrders filtered by sources specified in the orderRequest
+// Need to rework the way of storing and retrieving Sources, in order to improve performance
 func listOrders(c *gin.Context) {
-	requests, err := dbutil.LoadOrders(runtime.MongoCtx, runtime.MongoClient, config.DbName)
+	var request orderRequest
+	if err := c.BindJSON(&request); err != nil {
+		return
+	}
+	orders, err := dbutil.LoadOrders(runtime.MongoCtx, runtime.MongoClient, config.DbName)
 	if err != nil {
 		log.Println("ERROR retrieving requests:", err.Error())
 		c.IndentedJSON(http.StatusInternalServerError, err)
 		return
 	}
-	c.IndentedJSON(http.StatusOK, requests)
+	var fitleredOrdersIDs util.Set
+	var filteredOrders []dbutil.Order
+	for _, ord := range orders {
+		for _, src := range request.Sources {
+			if
+		}
+	}
+	c.IndentedJSON(http.StatusOK, orders)
 }
 
 // claimKey for API usage with "service" permissions
@@ -88,34 +99,6 @@ func handleArchive(c *gin.Context) {
 	} else {
 		c.IndentedJSON(http.StatusBadRequest, "invalid request format")
 	}
-}
-
-func getAvailableFiles(c *gin.Context) {
-	availableFiles, err := retrieveAllFiles()
-
-	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, "an error occured while listing the files")
-		log.Fatal(err)
-	}
-
-	c.IndentedJSON(http.StatusOK, availableFiles)
-}
-
-func addSourceBucket(c *gin.Context) {
-	var bucket dbutil.SourceBucket
-
-	if err := c.BindJSON(&bucket); err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	err := redisutil.PublishSourceBucketTask(runtime.RdbClient, bucket)
-	if err != nil {
-		fmt.Println("error publishing source bucket task", err)
-		c.IndentedJSON(http.StatusInternalServerError, "could not request source bucket creation")
-		return
-	}
-	c.IndentedJSON(http.StatusOK, bucket)
 }
 
 // handler for a simple healthCheck API that verifies if the service is alive / running

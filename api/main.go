@@ -7,12 +7,12 @@ import (
 )
 
 var (
-	config  *conf.ServerConfig
+	config  *conf.ApiConfig
 	runtime *conf.RuntimeConfig
 )
 
 func setupConfig() {
-	config = conf.InitServerConfig()
+	config = conf.InitApiConfig()
 	runtime = conf.InitRuntimeConfig(config)
 	_ = initAdminToken(runtime.MongoCtx, runtime.MongoClient)
 }
@@ -25,7 +25,6 @@ func setupRouter() *gin.Engine {
 	authorized := router.Group("/")
 	authorized.Use(AuthMiddleware("service"))
 	{
-		authorized.GET("/files", getAvailableFiles)
 		authorized.GET("/archive/:id", inspectArchive)
 		authorized.POST("/archive", handleArchive)
 		authorized.GET("/key/replace", replaceToken)
@@ -36,12 +35,11 @@ func setupRouter() *gin.Engine {
 		admin.POST("/registerHandler", registerTaskHandler)
 		admin.POST("/createKeyLink", handleCreateLink)
 		admin.POST("/revokeKey", revokeToken)
-		admin.POST("/addSourceBucket", addSourceBucket)
 	}
 	system := router.Group("/system") // for use by Task-handlers only
 	system.Use(AuthMiddleware("system"))
 	{
-		system.GET("/requests", listOrders)
+		system.POST("/orders", listOrders)
 	}
 
 	return router
