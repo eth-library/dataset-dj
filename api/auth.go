@@ -302,6 +302,9 @@ func getTokenPrefix(permission string) (string, error) {
 	if permission == "service" {
 		return "sk_", nil
 	}
+	if permission == "system" {
+		return "sy_", nil
+	}
 	return "", fmt.Errorf("permission must be one of [admin, service]")
 
 }
@@ -315,6 +318,7 @@ func generateAPIToken(permission string) string {
 	}
 	prefix, err := getTokenPrefix(permission)
 	if err != nil {
+		log.Println(err)
 		return ""
 	}
 	return prefix + hex.EncodeToString(b)

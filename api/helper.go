@@ -46,8 +46,6 @@ func createOrderForRequest(c *gin.Context, request archiveRequest) {
 		Status:    "opened",
 		Sources:   sources,
 	}
-	// TODO | Come up with a smart way of storing the orders in the DB such that only the relevant orders are loaded
-	// TODO | when a taskhandler asks for orders -> need to find orders based on provided sources
 	_, err = dbutil.InsertOne(runtime.MongoCtx, runtime.MongoClient, config.DbName, constants.Orders, order)
 	if err != nil {
 		log.Printf("Failed to create order for Archive (id: %s)", request.ArchiveID)

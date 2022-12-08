@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/eth-library/dataset-dj/constants"
+	"github.com/eth-library/dataset-dj/util"
 	"log"
 	"time"
 
-	"github.com/eth-library/dataset-dj/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -196,19 +196,24 @@ func LoadIDs(ctx context.Context, client *mongo.Client, dbName string, collectio
 	return util.SetFromSlice(idStruct.Ids), err
 }
 
-func LoadOrders(ctx context.Context, client *mongo.Client, dbName string) ([]Order, error) {
-	var orders []Order
+func LoadOrders(ctx context.Context, client *mongo.Client, dbName string, sources []string) ([]Order, error) {
+	var orders OrderSet
 	var results bson.M
-	col := client.Database(dbName).Collection(constants.Orders)
-	cursor, err := col.Find(ctx, bson.D{})
-	if err != nil {
-		log.Println("LoadOrders error: ", err)
+	for _, src := range sources {
+		col := client.Database(dbName).Collection(constants.Orders)
+		cursor, err := col.Find(ctx, bson.D{{"sources", src}})
+		if err != nil {
+			log.Println("LoadOrders error: ", err)
+			return []Order{}, err
+		}
+		if err = cursor.All(ctx, &results); err != nil {
+			log.Println("LoadOrders error: ", err)
+			return []Order{}, err
+		}
+		for _, res := range results {
+			order := res.(Order)
+			orders.Add(order)
+		}
 	}
-	if err = cursor.All(ctx, &results); err != nil {
-		log.Println("LoadOrders error: ", err)
-	}
-	for _, res := range results {
-		orders = append(orders, res.(Order))
-	}
-	return orders, err
+	return orders.ToSlice(), nil
 }

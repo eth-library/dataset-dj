@@ -8,7 +8,7 @@ import (
 
 var (
 	config  *conf.ApiConfig
-	runtime *conf.RuntimeConfig
+	runtime *conf.ApiRuntimeConfig
 )
 
 func setupConfig() {

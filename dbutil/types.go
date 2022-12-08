@@ -162,6 +162,22 @@ func (arch MetaArchiveDB) Convert() MetaArchive {
 	}
 }
 
+type OrderSet struct {
+	Elems map[string]Order `json:"elements"`
+}
+
+func (os OrderSet) ToSlice() []Order {
+	var slice []Order
+	for _, o := range os.Elems {
+		slice = append(slice, o)
+	}
+	return slice
+}
+
+func (os OrderSet) Add(o Order) {
+	os.Elems[o.OrderID] = o
+}
+
 type idFileWrapper struct {
 	Id  string   `json:"id" bson:"_id"`
 	Ids []string `json:"ids" bson:"ids"`

@@ -31,7 +31,7 @@ func listOrders(c *gin.Context) {
 	if err := c.BindJSON(&request); err != nil {
 		return
 	}
-	orders, err := dbutil.LoadOrders(runtime.MongoCtx, runtime.MongoClient, config.DbName)
+	orders, err := dbutil.LoadOrders(runtime.MongoCtx, runtime.MongoClient, config.DbName, request.Sources)
 	if err != nil {
 		log.Println("ERROR retrieving requests:", err.Error())
 		c.IndentedJSON(http.StatusInternalServerError, err)

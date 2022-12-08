@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/eth-library/dataset-dj/mailHandler"
 	"log"
 	"net/http"
 	"time"
@@ -14,7 +15,7 @@ import (
 )
 
 type singleUseLink struct {
-	// ID         string    `bson:"_id"`        // will use the _id returned from Mongo to create a link
+	// ID         string    `bson:"_id"`     // will use the _id returned from Mongo to create a link
 	Used       bool      `bson:"used"`       // set to True when visited. Then delete this document
 	ExpireAt   time.Time `bson:"expireAt"`   //after this time MongoDB will expire this document
 	Permission string    `bson:"permission"` //purpose that this link has e.g. create createAPIToken
@@ -25,14 +26,6 @@ type singleUseLink struct {
 // EmailRequestBody for binding email field in a json body
 type EmailRequestBody struct {
 	Email string `json:"email"`
-}
-
-// EmailParts required by the mailHandler to send an email
-type EmailParts struct {
-	To       string
-	Subject  string
-	BodyType string // e.g.: text/plain
-	Body     string
 }
 
 func handleCreateLink(c *gin.Context) {
@@ -58,16 +51,11 @@ func handleCreateLink(c *gin.Context) {
 	linkID := createSingleUseLink(runtime.MongoCtx, runtime.MongoClient, email)
 	url := c.Request.Host + "/key/claim/" + linkID
 
-	//TO DO: send email to recipient instead of return link
-	err = publishAPILinkEmailTask(url, email)
-	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, "error encountered while sending email")
-		return
-	}
-	c.IndentedJSON(http.StatusCreated, "email with token link sent")
+	//TODO: send email to recipient instead of return link
+	startAPILinkEmailTask(url, email)
 }
 
-func publishAPILinkEmailTask(url string, recipientEmail string) error {
+func startAPILinkEmailTask(url string, recipientEmail string) {
 
 	content := fmt.Sprintf(`
 	<h1>Welcome to the Data DJ</h1>
@@ -89,19 +77,19 @@ func publishAPILinkEmailTask(url string, recipientEmail string) error {
 	In case of issues, please contact us at contact[at]librarylab.ethz.ch
 	`, url, url)
 
-	emailparts := EmailParts{
-		To:       recipientEmail,
-		Subject:  "DataDJ - Link to claim API Key",
-		BodyType: "text/html",
-		Body:     content,
+	emailParts := mailHandler.EmailParts{
+		To:         recipientEmail,
+		Subject:    "DataDJ - Link to claim API Key",
+		BodyType:   "text/html",
+		Body:       content,
+		Server:     config.ServiceEmailHost,
+		Address:    config.ServiceEmailAddress,
+		Password:   config.ServiceEmailPassword,
+		ErrorMsg:   "an error occurred while sending the API Token email notification: ",
+		SuccessMsg: "email with token link sent",
 	}
 
-	err := redisutil.PublishTask(runtime.RdbClient, emailparts, "emails")
-	if err != nil {
-		log.Println("ERROR while publishing email task:", err.Error())
-		return err
-	}
-	return nil
+	go mailHandler.SendEmailAsync(emailParts)
 }
 
 func createSingleUseLink(ctx context.Context, client *mongo.Client, email string) string {

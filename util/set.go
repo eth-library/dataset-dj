@@ -30,7 +30,7 @@ func (s Set) SetElemsFromSlice(slice []string) {
 
 // ToSlice returns the elements of a set as a slice
 func (s Set) ToSlice() []string {
-	slice := []string{}
+	var slice []string
 	for e := range s.Elems {
 		slice = append(slice, e)
 	}
