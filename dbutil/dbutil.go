@@ -2,7 +2,6 @@ package dbutil
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/eth-library/dataset-dj/constants"
 	"github.com/eth-library/dataset-dj/util"
@@ -162,9 +161,6 @@ func LoadArchiveSources(ctx context.Context, client *mongo.Client, dbName string
 	opt := options.FindOne().SetProjection(bson.D{{"sources", 1}, {"_id", 0}})
 
 	err := col.FindOne(ctx, bson.D{{"_id", id}}, opt).Decode(&srcStruct)
-	println(id)
-	empJSON, _ := json.MarshalIndent(srcStruct, "", "  ")
-	fmt.Print("struct: \n", string(empJSON), "\n")
 	return srcStruct.Sources, err
 }
 
