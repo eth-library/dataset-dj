@@ -39,7 +39,6 @@ func InitApiConfig() *ApiConfig {
 	if cfg.Mode == "debug" {
 		empJSON, _ := json.MarshalIndent(cfg, "", "  ")
 		fmt.Print("config: \n", string(empJSON), "\n")
-
 	}
 
 	return &cfg

@@ -59,7 +59,7 @@ func claimKey(c *gin.Context) {
 
 // registerTaskHandler and return an APIKey for it to access the "system" resources
 func registerTaskHandler(c *gin.Context) {
-	setupAPIToken(c, "system")
+	setupAPIToken(c, "handler")
 }
 
 // inspectArchive to receive its current contents
@@ -98,8 +98,9 @@ func handleArchive(c *gin.Context) {
 		createOrderForRequest(c, request)
 	} else if request.ArchiveID != "" && len(request.Content) != 0 { // ArchiveID and Files set, Email empty
 		updateArchiveForRequest(c, request)
-	} else if request.Email != "" && len(request.Content) != 0 { // Email and Files set, ArchiveID empty
-		createArchiveForRequest(request)
+	} else if request.Email != "" && len(request.Content) != 0 { // Email and content set, ArchiveID empty
+		newArchive := createArchiveForRequest(request)
+		request.ArchiveID = newArchive.ID
 		createOrderForRequest(c, request)
 	} else if len(request.Content) != 0 { // Files set, Email and ArchiveID empty
 		newArchive := createArchiveForRequest(request)

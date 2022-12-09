@@ -59,6 +59,7 @@ func createArchiveForRequest(request archiveRequest) dbutil.MetaArchive {
 	newArchive := dbutil.MetaArchive{
 		ID:          generateID(constants.ArchiveIDs),
 		Content:     content,
+		Meta:        request.Meta,
 		TimeCreated: time.Now().String(),
 		TimeUpdated: "",
 		Status:      "opened",
@@ -73,7 +74,7 @@ func updateArchiveForRequest(c *gin.Context, request archiveRequest) {
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, "archive not found")
 	} else {
-		unionFileGroups, sources := dbutil.Union(archive.Content, util.Mapping(request.Content, dbutil.DBToFileGroup))
+		unionFileGroups, sources := dbutil.Union(archive.Convert().Content, util.Mapping(request.Content, dbutil.DBToFileGroup))
 		_, err = dbutil.UpdateArchiveContent(runtime.MongoCtx, runtime.MongoClient, config.DbName, request.ArchiveID,
 			unionFileGroups, sources)
 		if err != nil {

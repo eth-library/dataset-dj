@@ -2,6 +2,7 @@ package dbutil
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/eth-library/dataset-dj/constants"
 	"github.com/eth-library/dataset-dj/util"
@@ -106,17 +107,10 @@ func AddArchiveToDB(ctx context.Context, client *mongo.Client, dbName string, ar
 	} else {
 		fmt.Println(result)
 	}
-	sourceObj := bson.D{{"_id", archive.ID}, {"sources", archive.Sources}}
-	result, err = InsertOne(ctx, client, dbName, "sources", sourceObj)
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(result)
-	}
 }
 
 func AddSourceToDB(ctx context.Context, client *mongo.Client, dbName string, source Source) {
-	res, err := InsertOne(ctx, client, dbName, "sources", source)
+	res, err := InsertOne(ctx, client, dbName, constants.Sources, source)
 	if err != nil {
 		fmt.Println(err)
 	} else {
@@ -125,15 +119,12 @@ func AddSourceToDB(ctx context.Context, client *mongo.Client, dbName string, sou
 }
 
 // FindArchiveInDB retrieves an archive from the MongoDB
-func FindArchiveInDB(ctx context.Context, client *mongo.Client, dbName, id string) (MetaArchive, error) {
+func FindArchiveInDB(ctx context.Context, client *mongo.Client, dbName, id string) (MetaArchiveDB, error) {
 	var raw MetaArchiveDB
-	var archive MetaArchive
 	collection := client.Database(dbName).Collection("archives")
 	err := collection.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", id}}}}).Decode(&raw)
 	fmt.Println(err)
-	archive = raw.Convert()
-	archive.ID = id
-	return archive, err
+	return raw, err
 }
 
 // UpdateArchiveContent accepts client, context, database, collection, filter and update filter
@@ -164,12 +155,17 @@ func UpdateArchiveContent(ctx context.Context, client *mongo.Client, dbName stri
 }
 
 func LoadArchiveSources(ctx context.Context, client *mongo.Client, dbName string, id string) ([]string, error) {
-	var sources []string
+	var srcStruct struct {
+		Sources []string `bson:"sources"`
+	}
 	col := client.Database(dbName).Collection(constants.Archives)
-	opt := options.FindOne().SetProjection(bson.D{{"sources", 1}})
+	opt := options.FindOne().SetProjection(bson.D{{"sources", 1}, {"_id", 0}})
 
-	err := col.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", id}}}}, opt).Decode(&sources)
-	return sources, err
+	err := col.FindOne(ctx, bson.D{{"_id", id}}, opt).Decode(&srcStruct)
+	println(id)
+	empJSON, _ := json.MarshalIndent(srcStruct, "", "  ")
+	fmt.Print("struct: \n", string(empJSON), "\n")
+	return srcStruct.Sources, err
 }
 
 // UpdateIDs updates the list of archiveIDs in the DB
@@ -197,11 +193,13 @@ func LoadIDs(ctx context.Context, client *mongo.Client, dbName string, collectio
 }
 
 func LoadOrders(ctx context.Context, client *mongo.Client, dbName string, sources []string) ([]Order, error) {
-	var orders OrderSet
-	var results bson.M
+	orders := OrderSet{
+		Elems: make(map[string]Order),
+	}
+	var results []Order
 	for _, src := range sources {
 		col := client.Database(dbName).Collection(constants.Orders)
-		cursor, err := col.Find(ctx, bson.D{{"sources", src}})
+		cursor, err := col.Find(ctx, bson.D{{constants.Sources, src}})
 		if err != nil {
 			log.Println("LoadOrders error: ", err)
 			return []Order{}, err
@@ -210,8 +208,7 @@ func LoadOrders(ctx context.Context, client *mongo.Client, dbName string, source
 			log.Println("LoadOrders error: ", err)
 			return []Order{}, err
 		}
-		for _, res := range results {
-			order := res.(Order)
+		for _, order := range results {
 			orders.Add(order)
 		}
 	}

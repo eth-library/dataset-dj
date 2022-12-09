@@ -37,10 +37,10 @@ func setupRouter() *gin.Engine {
 		admin.POST("/createKeyLink", handleCreateLink)
 		admin.POST("/revokeKey", revokeToken)
 	}
-	system := router.Group("/system") // for use by Task-handlers only
-	system.Use(AuthMiddleware("system"))
+	handler := router.Group("/handler") // for use by Task-handlers only
+	handler.Use(AuthMiddleware("handler"))
 	{
-		system.POST("/orders", listOrders)
+		handler.POST("/orders", listOrders)
 	}
 
 	return router

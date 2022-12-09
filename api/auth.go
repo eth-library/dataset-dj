@@ -28,7 +28,7 @@ type authHeader struct {
 type APIKey struct {
 	HashedToken string `bson:"hashedToken,omitempty"`
 	CreatedDate string `bson:"createdDate,omitempty"`
-	Permission  string `bson:"permission,omitempty"` //service, system, user or admin
+	Permission  string `bson:"permission,omitempty"` //service, handler, user or admin
 }
 
 type tokenResponse struct {
@@ -302,8 +302,8 @@ func getTokenPrefix(permission string) (string, error) {
 	if permission == "service" {
 		return "sk_", nil
 	}
-	if permission == "system" {
-		return "sy_", nil
+	if permission == "handler" {
+		return "hk_", nil
 	}
 	return "", fmt.Errorf("permission must be one of [admin, service]")
 

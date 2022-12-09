@@ -60,7 +60,7 @@ func Union(fgs1 []FileGroup, fgs2 []FileGroup) ([]FileGroup, []string) {
 }
 
 func Unify(fgs []FileGroup) ([]FileGroup, []string) {
-	var contentMap map[string]FileGroup
+	var contentMap = make(map[string]FileGroup)
 	contentMap = fillContentMap(fgs, contentMap)
 	var res []FileGroup
 	var sources []string
