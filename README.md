@@ -201,7 +201,8 @@ docker run --env-file=./.env.local -p 8080:8080 data-dj-image
 ```
 ### Docker commands
 - `docker build --platform=linux/amd64 -f Dockerfile.api -t dj-api-amd64 .`
-- `docker build --platform=linux/amd64 -f Dockerfile.taskHandler -t dj-taskhandler .`
+- `docker tag dj-api-amd64:0.0.1 europe-west6-docker.pkg.dev/data-dj-2021/dj-docker-repo/dj-api:0.0.1`
+- `docker push europe-west6-docker.pkg.dev/data-dj-2021/dj-docker-repo/dj-api:0.0.1`
 
 ### Steps for Google Cloud Run
 - Follow instructions: [https://zahadum.notion.site/Google-Cloud-4c32dcbe1cfb4b479e8680e852ef0d84](https://zahadum.notion.site/Google-Cloud-4c32dcbe1cfb4b479e8680e852ef0d84)
