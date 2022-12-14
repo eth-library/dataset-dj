@@ -1,97 +1,130 @@
 # DataDJ
 
-Data DJ is a value-adding service for collections and archives, currently in development at ETH Library Lab, that helps to provide more convenient and efficient access to batches of digitised records and files. The service works in conjunction with collections' existing websites and search portals. The collection's website forwards the user's request for a list of files to the Data DJ, our service then gathers and compresses the files, and notifies the user via email with a convenient download link.
+Data DJ is a value-adding service for collections and archives, initially conceived at ETH Library Lab and currently in development at ETH Library. It helps to provide more convenient and efficient access to batches of digitised records and files. The service works in conjunction with collections' existing websites and search portals. The collection's website forwards the user's request for a list of files to the Data DJ, our service then gathers and compresses the files, and notifies the user via email with a convenient download link.
 
 <img src="./assets/DataDJ-simple-overview.gif" width=350 title="data dj process overview">
 
-The requests to the sample application DataDJ can be accessed at https://data-dj-2021.oa.r.appspot.com/
+The requests to the sample application DataDJ can be accessed at https://dj-api-ucooq6lz5a-oa.a.run.app/. The Requests presented throughout the README are written for Visual Studio Code [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client), however they can simply be transformed to be used with other API Clients or `curl`.
 
 If you are planning to work on this project, contact us to ask for the detailed internal documentation.
 
 ## Quickstart Guide
 
+### 1. Request an archive from a list of files
 
-### 1. List available files (GET)
-https://data-dj-2021.oa.r.appspot.com/files
-
-You can call the endpoint within your browser or with `curl`.
+Edit the curl request below to include your `email` and the list of `files` that you want to download (note the included filepath). Aditionally `meta` information can be included using said field. The endpoint can be called using `curl`. Once the files have been gathered and downloaded, you should receive an email with the download link. This endpoint should be called by a data collection, forwarding the files requested by a user and specifiying the users email address. Please note that the archiveID remains empty in the current iteration of the service.
 
 Example:
+```http
+POST https://dj-api-ucooq6lz5a-oa.a.run.app/archive
+Content-Type: application/json
+Authorization: Bearer service_key
 
-```bash
-curl https://data-dj-2021.oa.r.appspot.com/files 
-```
-
-
-### 2. Request an archive from the list of files
-
-Edit the curl request below to include your `email` and the list of `files` that you want to download (note the included filepath).The endpoint can be called using `curl`. After a few minutes, you should receive an email with the download link.
-
-Example:
-```bash
-curl https://data-dj-2021.oa.r.appspot.com/archive \
---include \
---header "Content-Type: application/json" \
---request "POST" \
---data '{"email":"your.name@librarylab.ethz.ch",
-         "files":["data-mirror/cmt-001_1917_001_0015.jpg",
-                   "data-mirror/cmt-001_1917_001_0019.jpg",
-                   "data-mirror/cmt-001_1917_001_0057.jpg"]
-        }'
+{
+    "email": "email@address.com",
+    "archiveID": "",
+    "content": [
+        {
+            "sourceID": "0ff529e3",
+            "files": ["/test/dir/file1", "/test/dir/file2"]
+        },
+        {
+            "sourceID": "eba48cdb",
+            "files": ["/test/dir/file3", "/test/dir/file4"]
+        }],
+    "meta": "{meta: information}"
+}
 ```
 ---
 ## API Endpoints
 
-### Listing all available files (GET)
-https://data-dj-2021.oa.r.appspot.com/files
+### Check if DataDJ service is live (Public)
 
-You can call the endpoint within your browser or with `curl`.
-
-Example:
-
-```bash
-curl https://data-dj-2021.oa.r.appspot.com/files 
+```http
+GET https://dj-api-ucooq6lz5a-oa.a.run.app/ping
 ```
 
----
+### Register Services, Taskhandler and Sources 
+#### 1. Register new Service (Admin)
 
-```bash
-curl -X POST "0.0.0.0:8765/admin/revokeKey"  -H "Authorization: Bearer $ADMIN_KEY" -v -H "content:application/json" -d '{"apiKey":"sk_86d8f6adf1909657b772cdad84e691d8"}'
-``` 
+An admin can task the DJ to generate a new service token/key and to send an email with a redeem link to the specified email address. The service key is required by collections to interact with the DJ for anything related to creating and altering archives.
 
+```http
+POST https://dj-api-ucooq6lz5a-oa.a.run.app/admin/createKeyLink
+Content-Type: application/json
+Authorization: Bearer admin_key
 
-### Creating, modifying or downloading archives (POST)
-https://data-dj-2021.oa.r.appspot.com/archive
+{
+    "email": "email@address.com"
+}
+```
 
-This endpoint expects a request that contains three fields:
+#### 2. Register new Taskhandler (Admin)
+
+A taskhandler is the part of the DataDJ responsible for gathering and compressing the requested files, as well as sending an email containing a download link to the user who requested the files. In order to interact to the API part of the DataDJ, the taskhandler requires a handler token/key similar to a service key. Said key can be generated by an admin via the following request and has to be manually handed to the operator of the taskhandler in question (for now).
+
+```http
+POST https://dj-api-ucooq6lz5a-oa.a.run.app/admin/registerHandler
+Content-Type: application/json
+Authorization: Bearer admin_key
+```
+
+#### 3. Register new Source (Service)
+
+A source is a representation of a collection holding files to be downloaded. This services the purpose to identify which files have to be gathered where and also to keep track of the origin of every file to provide an overview of every sources contribution to the final archive with all its files. The registration request returns a source-id which subsequentially has to be used to uniquely identify the source when interacting with the DataDJ.
+
+```http
+POST https://dj-api-ucooq6lz5a-oa.a.run.app/source
+Content-Type: application/json
+Authorization: Bearer service_key
+
+{
+    "name": "Test-Source-One",
+    "Organisation": "ETHZ"
+}
+```
+
+### Creating, modifying or downloading archives (Service)
+https://dj-api-ucooq6lz5a-oa.a.run.app/archive
+
+This endpoint expects a request that contains four fields:
 
 ```json
 {
   "email":"",
   "archiveID":"",
-  "files":[]
+  "files":[],
+  "meta": ""
 }
 ```
-`email` is a string, `archiveID` as well, being a truncated UUID as string and `files` is a list of strings containing the names of the files.
-Depending on which fields are left empty, the API triggers different operations.
+`email`, `archiveID` and `meta` are strings, whereas `files` is a list of strings containing the names of the files.
+Depending on which fields are left empty, the API triggers different operations. For now only option 4 is being used in tests, whereas the other option are kept for the future.
 
 
 #### 1. Create an archive from a list of files
 
-Both `email` and `archiveID` are left empty, whereas `files` contains the names of the files the archive should be initialised with. The endpoint can be called using `curl`.
+Both `email` and `archiveID` are left empty, whereas `files` contains the names of the files the archive should be initialised with.
 
 Example:
-```bash
-curl https://data-dj-2021.oa.r.appspot.com/archive \
---include \
---header "Content-Type: application/json" \
---request "POST" \
---data '{"email":"your.name@librarylab.ethz.ch",
-         "archiveID":"",
-         "files":["data-mirror/cmt-001_1917_001_0015.jpg",
-                   "data-mirror/cmt-001_1917_001_0019.jpg",
-                   "data-mirror/cmt-001_1917_001_0057.jpg"]
-        }'
+```http
+POST https://dj-api-ucooq6lz5a-oa.a.run.app/archive
+Content-Type: application/json
+Authorization: Bearer service_key
+
+{
+    "email": "",
+    "archiveID": "",
+    "content": [
+        {
+            "sourceID": "0ff529e3",
+            "files": ["/test/dir/file1", "/test/dir/file2"]
+        },
+        {
+            "sourceID": "eba48cdb",
+            "files": ["/test/dir/file3", "/test/dir/file4"]
+        }],
+    "meta": "{meta: information}"
+}
 ```
 
 #### 2. Add a list of files to an archive
@@ -99,17 +132,25 @@ curl https://data-dj-2021.oa.r.appspot.com/archive \
 `email` is left empty. `archiveID` contains the identifier of a previously created archive and `files` the list of files you want to add to the archive.
 
 Example:
-```bash
-curl https://data-dj-2021.oa.r.appspot.com/archive \
---include \
---header "Content-Type: application/json" \
---request "POST" \
---data '{"email":"",
-         "archiveID":"9d0b43d5",
-         "files":["data-mirror/cmt-001_1917_001_0016.jpg",
-                   "data-mirror/cmt-001_1917_001_0017.jpg",
-                   "data-mirror/cmt-001_1917_001_0059.jpg"]
-        }'
+```http
+POST https://dj-api-ucooq6lz5a-oa.a.run.app/archive
+Content-Type: application/json
+Authorization: service_key
+
+{
+    "email": "",
+    "archiveID": "e01fd941",
+    "content": [
+        {
+            "sourceID": "0ff529e3",
+            "files": ["/test/dir/file1", "/test/dir/file2"]
+        },
+        {
+            "sourceID": "eba48cdb",
+            "files": ["/test/dir/file3", "/test/dir/file4"]
+        }],
+    "meta": "{meta: information}"
+}
 ```
 
 #### 3. Download an archive
@@ -117,15 +158,17 @@ curl https://data-dj-2021.oa.r.appspot.com/archive \
 `email` contains the email address the download link is being sent to, `archiveID` specifies the archive you want to download and `files` is left empty. The DataDj will send you a download link that allows you to download the archive as a .zip file.
 
 Example:
-```bash
-curl https://data-dj-2021.oa.r.appspot.com/archive \
---include \
---header "Content-Type: application/json" \
---request "POST" \
---data '{"email":"your.name@librarylab.ethz.ch",
-         "archiveID":"9d0b43d5",
-         "files":[]
-        }'
+```http
+POST https://dj-api-ucooq6lz5a-oa.a.run.app/archive
+Content-Type: application/json
+Authorization: Bearer service_key
+
+{
+    "email": "email@address.com",
+    "archiveID": "e01fd941",
+    "content": [],
+    "meta": ""
+}
 ```
 
 #### 4. Directly download a list of files as archive
@@ -134,17 +177,25 @@ curl https://data-dj-2021.oa.r.appspot.com/archive \
 The DJ creates an archive of the files in the request and will also return its identifier in the response, in case that archive needs to be accessed or modified later on. However it is not necessary to separatly trigger the notification containing the download link as this is going to happen automatically.
 
 Example:
-```bash
-curl https://data-dj-2021.oa.r.appspot.com/archive \
---include \
---header "Content-Type: application/json" \
---request "POST" \
---data '{"email":"your.name@librarylab.ethz.ch",
-         "archiveID":"",
-         "files":["data-mirror/cmt-001_1917_001_0016.jpg",
-                   "data-mirror/cmt-001_1917_001_0017.jpg",
-                   "data-mirror/cmt-001_1917_001_0059.jpg"]
-        }'
+```http
+POST https://dj-api-ucooq6lz5a-oa.a.run.app/archive
+Content-Type: application/json
+Authorization: Bearer service_key
+
+{
+    "email": "email@address.com",
+    "archiveID": "",
+    "content": [
+        {
+            "sourceID": "0ff529e3",
+            "files": ["/test/dir/file1", "/test/dir/file2"]
+        },
+        {
+            "sourceID": "eba48cdb",
+            "files": ["/test/dir/file3", "/test/dir/file4"]
+        }],
+    "meta": "{meta: information}"
+}
 ```
 
 ---
