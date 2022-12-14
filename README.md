@@ -198,22 +198,65 @@ Authorization: Bearer service_key
 }
 ```
 
----
+Currently, the ```/archive``` endpoint returns an object describing the order which was created for the archive in question. Orders are objects telling the taskhandlers which archives should be downloaded.
+```json
+{
+  "orderID": "a5777ffb",
+  "archiveID": "4afc3f67",
+  "email": "email@address.com",
+  "date": "2022-12-14 16:27:28.967665178 +0000 UTC m=+67114.216955617",
+  "status": "opened",
+  "sources": [
+    "0ff529e3"
+  ]
+}
+```
 
-### Inspecting an archive (GET)
+### Inspecting an archive (Service)
 
 https://data-dj-2021.oa.r.appspot.com/archive/id
 
-This endpoint allows to inspect the contents of an archive `id` either in the browser or via `curl`. The response is a JSON object that specifies the identifier and contents of the corresponding archive.
+This endpoint allows to inspect the contents of an archive `id` either in the browser or via an API client. The response is a JSON object representing the archive.
 
 Example:
-```bash
-curl https://data-dj-2021.oa.r.appspot.com/archive/9d0b43d5
+```http
+GET https://dj-api-ucooq6lz5a-oa.a.run.app/archive/a2e11165
+Content-Type: application/json
+Authorization: Bearer service_key
 ```
+Example Response:
+```json
+{
+  "id": "a2e11165",
+  "content": [
+    {
+      "sourceID": "0ff529e3",
+      "files": [
+        "/test/dir/file1",
+        "/test/dir/file2"
+      ]
+    },
+    {
+      "sourceID": "eba48cdb",
+      "files": [
+        "/test/dir/file3",
+        "/test/dir/file4"
+      ]
+    }
+  ],
+  "meta": "{meta: information}",
+  "timeCreated": "2022-12-09 13:31:43.320372 +0100 CET m=+305.508934168",
+  "timeUpdated": "",
+  "status": "opened",
+  "sources": [
+    "0ff529e3",
+    "eba48cdb"
+  ]
+}
+```
+---
 
-
-
-# Local Development
+# Local Development (Outdated)
 
 1. make a copy of `.env.example` and save it as `.env.local`    
 1. replace the example directory paths, bucketnames and other settings as needed.  
@@ -257,27 +300,6 @@ docker run --env-file=./.env.local -p 8080:8080 data-dj-image
 
 ### Steps for Google Cloud Run
 - Follow instructions: [https://zahadum.notion.site/Google-Cloud-4c32dcbe1cfb4b479e8680e852ef0d84](https://zahadum.notion.site/Google-Cloud-4c32dcbe1cfb4b479e8680e852ef0d84)
-- Setup redis instance in Memorystore
-- Create VPC Connector for the VPC Network the redis instance is using
-- Create secrets (secret manager) to store passwords and tokens
-- Create Cloud Run Service and make sure to also add the following environment variables: REDISHOST and REDISPORT. You can find their respective values when looking at the previously created redis instance in the Memorystore
-- Make sure to also choose the correct connector when creating the new service
-
-send a request
-```
-curl http://0.0.0.0:8765/archive \
---include \
---request "POST" \
---header "Authorization: Bearer $USER_KEY" \
---header "Content-Type: application/json" \
---data '{"email":"barry.sunderland@librarylab.ethz.ch",
-         "archiveID":"",
-         "files":["local/cmt-001_1917_001_0016.jpg",
-                   "local/cmt-001_1917_001_0017.jpg",
-                   "local/cmt-001_1917_001_0059.jpg"]
-        }'
-
-```
 
 curl -X POST "0.0.0.0:8765/admin/createKeyLink" \
     -H "Authorization: Bearer $ADMIN_KEY" \
