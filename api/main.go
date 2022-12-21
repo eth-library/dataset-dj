@@ -8,12 +8,12 @@ import (
 
 var (
 	config  *conf.ApiConfig
-	runtime *conf.ApiRuntimeConfig
+	runtime *conf.ApiRuntime
 )
 
 func setupConfig() {
 	config = conf.InitApiConfig()
-	runtime = conf.InitRuntimeConfig(config)
+	runtime = conf.InitApiRuntime(config)
 	_ = initAdminToken(runtime.MongoCtx, runtime.MongoClient)
 }
 

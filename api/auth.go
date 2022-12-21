@@ -95,6 +95,7 @@ func setupAPIToken(c *gin.Context, tokenPermission string) {
 
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, "unable to create APIKey for Taskhandler")
+		return
 	}
 
 	resp := tokenResponse{
@@ -272,28 +273,6 @@ func getTokenFromHeader(c *gin.Context) (string, error) {
 	return strings.TrimSpace(parts[1]), nil
 }
 
-// handleValidateAPIToken provides a way to check if an Api Key is valid
-func handleValidateAPIToken(c *gin.Context) {
-
-	token, err := getTokenFromHeader(c)
-	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	if token == "" {
-		c.IndentedJSON(http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	collection := getColHandle("apiKeys")
-	res, _ := validateAPIToken(collection, token)
-	if res == false {
-		c.IndentedJSON(http.StatusUnauthorized, "invalid Bearer Token")
-	} else {
-		c.IndentedJSON(http.StatusOK, "Authorization Bearer Token validated successfully")
-	}
-}
-
 func getTokenPrefix(permission string) (string, error) {
 
 	if permission == "admin" {
@@ -305,7 +284,7 @@ func getTokenPrefix(permission string) (string, error) {
 	if permission == "handler" {
 		return "hk_", nil
 	}
-	return "", fmt.Errorf("permission must be one of [admin, service]")
+	return "", fmt.Errorf("permission must be one of [admin, service, handler]")
 
 }
 

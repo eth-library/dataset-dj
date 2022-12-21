@@ -4,11 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/eth-library/dataset-dj/mailHandler"
-	"log"
-	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -26,33 +23,6 @@ type singleUseLink struct {
 // EmailRequestBody for binding email field in a json body
 type EmailRequestBody struct {
 	Email string `json:"email"`
-}
-
-func handleCreateLink(c *gin.Context) {
-
-	var emailRequestBody EmailRequestBody
-	if err := c.BindJSON(&emailRequestBody); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, "recipient email required")
-		return
-	}
-	email := emailRequestBody.Email
-	email, err := emailIsValid(email)
-	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, "email format not valid")
-		return
-	}
-
-	//to prevent duplicates
-	err = deleteExistingLinks(runtime.MongoCtx, runtime.MongoClient, email)
-	if err != nil {
-		log.Println("error deleting existing links: ", err)
-	}
-	//create link
-	linkID := createSingleUseLink(runtime.MongoCtx, runtime.MongoClient, email)
-	url := c.Request.Host + "/key/claim/" + linkID
-
-	//TODO: send email to recipient instead of return link
-	startAPILinkEmailTask(url, email)
 }
 
 func startAPILinkEmailTask(url string, recipientEmail string) {
@@ -74,7 +44,7 @@ func startAPILinkEmailTask(url string, recipientEmail string) {
 	   (click or copy & paste into your browser)
 	</p>
 	
-	In case of issues, please contact us at contact[at]librarylab.ethz.ch
+	In case of issues, please contact us at contact@librarylab.ethz.ch
 	`, url, url)
 
 	emailParts := mailHandler.EmailParts{

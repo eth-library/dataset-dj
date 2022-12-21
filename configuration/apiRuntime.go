@@ -12,8 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// ApiRuntimeConfig holds pointers to storage clients and some in memory lists
-type ApiRuntimeConfig struct {
+// ApiRuntime holds pointers to storage clients and some in memory lists
+type ApiRuntime struct {
 	MongoClient *mongo.Client
 	MongoCtx    context.Context
 	CtxCancel   context.CancelFunc
@@ -22,7 +22,7 @@ type ApiRuntimeConfig struct {
 	OrderIDs    util.Set
 }
 
-func InitRuntimeConfig(sc *ApiConfig) *ApiRuntimeConfig {
+func InitApiRuntime(sc *ApiConfig) *ApiRuntime {
 	ctx := context.Background()
 	storageClient, err := storage.NewClient(ctx)
 	if err != nil {
@@ -61,7 +61,7 @@ func InitRuntimeConfig(sc *ApiConfig) *ApiRuntimeConfig {
 		log.Fatal(err)
 	}
 
-	rc := ApiRuntimeConfig{
+	rc := ApiRuntime{
 		MongoClient: mongoClient,
 		MongoCtx:    mongoCtx,
 		CtxCancel:   cancel,

@@ -10,35 +10,54 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func registerSource(c *gin.Context) {
-	var request sourceRequest
-	if err := c.BindJSON(&request); err != nil {
+// ----------------------------------------- Authentication ------------------------------------------------
+
+func handleCreateLink(c *gin.Context) {
+	var emailRequestBody EmailRequestBody
+	if err := c.BindJSON(&emailRequestBody); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, "recipient email required")
 		return
 	}
-	source := dbutil.Source{
-		ID:           generateID(constants.SourceIDs),
-		Name:         request.Name,
-		Organisation: request.Organisation,
+	email := emailRequestBody.Email
+	email, err := emailIsValid(email)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, "email format not valid")
+		return
 	}
-	dbutil.AddSourceToDB(runtime.MongoCtx, runtime.MongoClient, config.DbName, source)
-	c.IndentedJSON(http.StatusOK, source.ID)
+
+	//to prevent duplicates
+	err = deleteExistingLinks(runtime.MongoCtx, runtime.MongoClient, email)
+	if err != nil {
+		log.Println("error deleting existing links: ", err)
+	}
+	//create link
+	linkID := createSingleUseLink(runtime.MongoCtx, runtime.MongoClient, email)
+	url := "https://" + c.Request.Host + "/key/claim/" + linkID
+
+	//TODO: send email to recipient instead of return link
+	startAPILinkEmailTask(url, email)
 }
 
-// listOrders filtered by sources specified in the orderRequest
-// Need to rework the way of storing and retrieving Sources, in order to improve performance
-func listOrders(c *gin.Context) {
-	var request orderRequest
-	if err := c.BindJSON(&request); err != nil {
+// handleValidateAPIToken provides a way to check if an Api Key is valid
+func handleValidateAPIToken(c *gin.Context) {
+
+	token, err := getTokenFromHeader(c)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	orders, err := dbutil.LoadOrders(runtime.MongoCtx, runtime.MongoClient, config.DbName, request.Sources)
-	if err != nil {
-		log.Println("ERROR retrieving requests:", err.Error())
-		c.IndentedJSON(http.StatusInternalServerError, err)
+	if token == "" {
+		c.IndentedJSON(http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, orders)
+	collection := getColHandle("apiKeys")
+	res, _ := validateAPIToken(collection, token)
+	if res == false {
+		c.IndentedJSON(http.StatusUnauthorized, "invalid Bearer Token")
+	} else {
+		c.IndentedJSON(http.StatusOK, "Authorization Bearer Token validated successfully")
+	}
 }
 
 // claimKey for API usage with "service" permissions
@@ -57,9 +76,44 @@ func claimKey(c *gin.Context) {
 	setupAPIToken(c, "service")
 }
 
+// --------------------------------------- Register new endpoints ---------------------------------------
+
+func registerSource(c *gin.Context) {
+	var request sourceRequest
+	if err := c.BindJSON(&request); err != nil {
+		return
+	}
+	source := dbutil.Source{
+		ID:           generateID(constants.SourceIDs),
+		Name:         request.Name,
+		Organisation: request.Organisation,
+	}
+	dbutil.AddSourceToDB(runtime.MongoCtx, runtime.MongoClient, config.DbName, source)
+	c.IndentedJSON(http.StatusOK, source.ID)
+}
+
 // registerTaskHandler and return an APIKey for it to access the "system" resources
 func registerTaskHandler(c *gin.Context) {
 	setupAPIToken(c, "handler")
+}
+
+// ----------------------------------------- Inspect State ----------------------------------------------
+
+// listOrders filtered by sources specified in the orderRequest
+// Need to rework the way of storing and retrieving Sources, in order to improve performance
+func listOrders(c *gin.Context) {
+	var request orderRequest
+	if err := c.BindJSON(&request); err != nil {
+		return
+	}
+	orders, err := dbutil.LoadOrders(runtime.MongoCtx, runtime.MongoClient, config.DbName, request.Sources)
+	if err != nil {
+		log.Println("ERROR retrieving requests:", err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err)
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, orders)
 }
 
 // inspectArchive to receive its current contents
@@ -73,6 +127,13 @@ func inspectArchive(c *gin.Context) {
 		c.IndentedJSON(http.StatusOK, arch)
 	}
 }
+
+// handler for a simple healthCheck API that verifies if the service is alive / running
+func healthCheck(c *gin.Context) {
+	c.String(http.StatusOK, "pong")
+}
+
+// ------------------------------------------- Archives ----------------------------------------------------
 
 // handler for the /archive API endpoint that receives an archiveRequest. See archiveRequest for more
 // information about the possible combinations that are being switched by this function.
@@ -108,9 +169,4 @@ func handleArchive(c *gin.Context) {
 	} else {
 		c.IndentedJSON(http.StatusBadRequest, "invalid request format")
 	}
-}
-
-// handler for a simple healthCheck API that verifies if the service is alive / running
-func healthCheck(c *gin.Context) {
-	c.String(http.StatusOK, "pong")
 }
