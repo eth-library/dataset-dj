@@ -28,6 +28,10 @@ type orderRequest struct {
 	Sources []string `json:"sources"`
 }
 
+type orderStatusRequest struct {
+	NewStatus string `json:"newStatus"`
+}
+
 type sourceRequest struct {
 	Name         string
 	Organisation string

@@ -3,6 +3,7 @@ package dbutil
 import (
 	"github.com/eth-library/dataset-dj/util"
 	"go.mongodb.org/mongo-driver/bson"
+	"time"
 )
 
 // Source contains information about the origin of the data contained within a MetaArchive
@@ -19,6 +20,15 @@ type Order struct {
 	Date      string   `json:"date" bson:"date"`
 	Status    string   `json:"status" bson:"status"`
 	Sources   []string `json:"sources" bson:"sources"`
+}
+
+type OrderTime struct {
+	OrderID   string    `json:"orderID" bson:"_id,omitempty"`
+	ArchiveID string    `json:"archiveID" bson:"archiveID"`
+	Email     string    `json:"email" bson:"email"`
+	Date      time.Time `json:"date" bson:"date"`
+	Status    string    `json:"status" bson:"status"`
+	Sources   []string  `json:"sources" bson:"sources"`
 }
 
 type FileGroup struct {

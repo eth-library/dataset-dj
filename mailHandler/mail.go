@@ -34,6 +34,7 @@ func SendEmailAsync(email EmailParts) {
 
 	if err := d.DialAndSend(m); err != nil {
 		fmt.Println(fmt.Errorf(email.ErrorMsg + err.Error()))
+		return
 	}
 	fmt.Println(email.SuccessMsg)
 }

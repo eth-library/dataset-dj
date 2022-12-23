@@ -41,6 +41,7 @@ func setupRouter() *gin.Engine {
 	handler.Use(AuthMiddleware("handler"))
 	{
 		handler.POST("/orders", listOrders)
+		handler.POST("/order/:id", updateStatus)
 	}
 
 	return router

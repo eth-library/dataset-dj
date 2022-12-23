@@ -42,8 +42,8 @@ func createOrderForRequest(c *gin.Context, request archiveRequest) {
 		OrderID:   generateID(constants.OrderIDs),
 		ArchiveID: request.ArchiveID,
 		Email:     request.Email,
-		Date:      time.Now().String(),
-		Status:    "opened",
+		Date:      time.Now().Format(time.RFC822),
+		Status:    constants.Opened,
 		Sources:   sources,
 	}
 	_, err = dbutil.InsertOne(runtime.MongoCtx, runtime.MongoClient, config.DbName, constants.Orders, order)
@@ -60,9 +60,9 @@ func createArchiveForRequest(request archiveRequest) dbutil.MetaArchive {
 		ID:          generateID(constants.ArchiveIDs),
 		Content:     content,
 		Meta:        request.Meta,
-		TimeCreated: time.Now().String(),
+		TimeCreated: time.Now().Format(time.RFC822),
 		TimeUpdated: "",
-		Status:      "opened",
+		Status:      constants.Opened,
 		Sources:     sources,
 	}
 	dbutil.AddArchiveToDB(runtime.MongoCtx, runtime.MongoClient, config.DbName, newArchive)

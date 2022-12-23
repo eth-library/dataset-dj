@@ -112,7 +112,6 @@ func listOrders(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, err)
 		return
 	}
-
 	c.IndentedJSON(http.StatusOK, orders)
 }
 
@@ -140,6 +139,7 @@ func healthCheck(c *gin.Context) {
 func handleArchive(c *gin.Context) {
 	var request archiveRequest
 	if err := c.BindJSON(&request); err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -168,5 +168,39 @@ func handleArchive(c *gin.Context) {
 		c.IndentedJSON(http.StatusCreated, newArchive)
 	} else {
 		c.IndentedJSON(http.StatusBadRequest, "invalid request format")
+	}
+}
+
+// --------------------------------------------- Status changes -----------------------------------------------
+
+func updateStatus(c *gin.Context) {
+	id := c.Param("id") // bind parameter id provided by the gin.Context object
+	var request orderStatusRequest
+	if err := c.BindJSON(&request); err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err)
+		return
+	}
+	order, err := dbutil.LoadOrder(runtime.MongoCtx, runtime.MongoClient, config.DbName, id)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err)
+		return
+	}
+	if (order.Status == constants.Opened && request.NewStatus == constants.Processing) ||
+		(order.Status == constants.Processing && request.NewStatus == constants.Closed) {
+		_, err := dbutil.UpdateOrderStatus(runtime.MongoCtx, runtime.MongoClient, config.DbName, id,
+			request.NewStatus)
+		if err != nil {
+			c.IndentedJSON(http.StatusInternalServerError, err)
+			return
+		}
+		_, err = dbutil.UpdateArchiveStatus(runtime.MongoCtx, runtime.MongoClient, config.DbName, order.ArchiveID,
+			request.NewStatus)
+		if err != nil {
+			c.IndentedJSON(http.StatusInternalServerError, err)
+			return
+		}
+		c.IndentedJSON(http.StatusOK, request.NewStatus)
+	} else {
+		c.IndentedJSON(http.StatusConflict, "Order status could not be updated")
 	}
 }

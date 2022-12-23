@@ -14,25 +14,26 @@ const (
 	defaultJobs     = 1
 	defaultInterval = 900
 	defaultURL      = "https://dj-api-ucooq6lz5a-oa.a.run.app"
-	defaultLayout   = "15:04"
 )
 
 type HandlerConfig struct {
-	MaxJobs         int
-	RequestInterval int
-	StartTime       time.Time
-	EndTime         time.Time
-	Sources         []string
-	TargetURL       string
-	HandlerKey      string
-	Layout          string
+	MaxJobs              int
+	RequestInterval      int
+	StartTime            time.Time
+	EndTime              time.Time
+	Sources              []string
+	TargetURL            string
+	HandlerKey           string
+	ServiceEmailHost     string // The email server to connect to
+	ServiceEmailAddress  string // email address for sending the form and download link
+	ServiceEmailPassword string // password for email address
 }
 
 func lookupTime(key string) time.Time {
 	var timeVar time.Time
 	timeString := os.Getenv(key)
 	if timeString != "" {
-		val, err := time.Parse(defaultLayout, timeString)
+		val, err := time.Parse("15:04", timeString)
 		if err != nil {
 			log.Fatal(key + " could not be converted to correct time format")
 		}
@@ -79,10 +80,28 @@ func InitHandlerConfig() *HandlerConfig {
 	// API URL
 	targetURL := lookupString("TARGET_URL", defaultURL)
 
-	// Handler Key
+	// Handler key
 	handlerKey := lookupString("HANDLER_KEY", "")
 	if handlerKey == "" {
 		log.Fatal("HANDLER_KEY cannot be empty! Please request a handler from the API admin")
+	}
+
+	// Email host
+	emailHost := lookupString("EMAIL_HOST", "")
+	if handlerKey == "" {
+		log.Fatal("EMAIL_HOST cannot be empty!")
+	}
+
+	// Email address
+	emailAddress := lookupString("EMAIL_ADDRESS", "")
+	if handlerKey == "" {
+		log.Fatal("EMAIL_ADDRESS cannot be empty!")
+	}
+
+	// Email password
+	emailPassword := lookupString("EMAIL_PASSWORD", "")
+	if handlerKey == "" {
+		log.Fatal("EMAIL_PASSWORD cannot be empty!")
 	}
 
 	// Source Ids
@@ -97,14 +116,16 @@ func InitHandlerConfig() *HandlerConfig {
 
 	// Create config struct
 	hc := HandlerConfig{
-		MaxJobs:         jobs,
-		RequestInterval: interval,
-		StartTime:       startTime,
-		EndTime:         endTime,
-		Sources:         sources,
-		TargetURL:       targetURL,
-		HandlerKey:      handlerKey,
-		Layout:          defaultLayout,
+		MaxJobs:              jobs,
+		RequestInterval:      interval,
+		StartTime:            startTime,
+		EndTime:              endTime,
+		Sources:              sources,
+		TargetURL:            targetURL,
+		HandlerKey:           handlerKey,
+		ServiceEmailHost:     emailHost,     // for example: "smtp.gmail.com"
+		ServiceEmailAddress:  emailAddress,  // for example: "datadj.service@gmail.com"
+		ServiceEmailPassword: emailPassword, // gotta find a good one yourself
 	}
 	pretty, _ := json.MarshalIndent(hc, "", "  ")
 	fmt.Print("config: \n", string(pretty), "\n")

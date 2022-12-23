@@ -8,4 +8,8 @@ const (
 	Archives   = "archives"
 	Sources    = "sources"
 	Orders     = "orders"
+	Status     = "status"
+	Opened     = "opened"
+	Processing = "processing"
+	Closed     = "closed"
 )

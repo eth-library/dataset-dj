@@ -100,7 +100,7 @@ func InsertMany(ctx context.Context, client *mongo.Client, dbName string, col st
 }
 
 func AddArchiveToDB(ctx context.Context, client *mongo.Client, dbName string, archive MetaArchive) {
-	result, err := InsertOne(ctx, client, dbName, "archives", archive.Convert())
+	result, err := InsertOne(ctx, client, dbName, constants.Archives, archive.Convert())
 	if err != nil {
 		fmt.Println(err)
 	} else {
@@ -120,7 +120,7 @@ func AddSourceToDB(ctx context.Context, client *mongo.Client, dbName string, sou
 // FindArchiveInDB retrieves an archive from the MongoDB
 func FindArchiveInDB(ctx context.Context, client *mongo.Client, dbName, id string) (MetaArchiveDB, error) {
 	var raw MetaArchiveDB
-	collection := client.Database(dbName).Collection("archives")
+	collection := client.Database(dbName).Collection(constants.Archives)
 	err := collection.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", id}}}}).Decode(&raw)
 	fmt.Println(err)
 	return raw, err
@@ -132,7 +132,7 @@ func UpdateArchiveContent(ctx context.Context, client *mongo.Client, dbName stri
 	id string, contentUpdate interface{}, sourceUpdate interface{}) (*mongo.UpdateResult, error) {
 
 	// select the database and the collection
-	collection := client.Database(dbName).Collection("archives")
+	collection := client.Database(dbName).Collection(constants.Archives)
 
 	// A single document that match with the
 	// filter will get updated.
@@ -151,6 +151,13 @@ func UpdateArchiveContent(ctx context.Context, client *mongo.Client, dbName stri
 	result, err = collection.UpdateByID(ctx, id, bson.D{{"$set",
 		bson.D{{"sources", sourceUpdate}}}})
 	return result, err
+}
+
+func UpdateArchiveStatus(ctx context.Context, client *mongo.Client, dbName string, archiveID string,
+	newStatus string) (*mongo.UpdateResult, error) {
+	col := client.Database(dbName).Collection(constants.Archives)
+	res, err := col.UpdateByID(ctx, archiveID, bson.M{"$set": bson.M{"status": newStatus}})
+	return res, err
 }
 
 func LoadArchiveSources(ctx context.Context, client *mongo.Client, dbName string, id string) ([]string, error) {
@@ -195,7 +202,7 @@ func LoadOrders(ctx context.Context, client *mongo.Client, dbName string, source
 	var results []Order
 	for _, src := range sources {
 		col := client.Database(dbName).Collection(constants.Orders)
-		cursor, err := col.Find(ctx, bson.D{{constants.Sources, src}})
+		cursor, err := col.Find(ctx, bson.D{{constants.Sources, src}, {constants.Status, "opened"}})
 		if err != nil {
 			log.Println("LoadOrders error: ", err)
 			return []Order{}, err
@@ -209,4 +216,18 @@ func LoadOrders(ctx context.Context, client *mongo.Client, dbName string, source
 		}
 	}
 	return orders.ToSlice(), nil
+}
+
+func LoadOrder(ctx context.Context, client *mongo.Client, dbName string, orderID string) (Order, error) {
+	var order Order
+	collection := client.Database(dbName).Collection(constants.Orders)
+	err := collection.FindOne(ctx, bson.D{{"_id", orderID}}).Decode(&order)
+	return order, err
+}
+
+func UpdateOrderStatus(ctx context.Context, client *mongo.Client, dbName string, orderID string,
+	newStatus string) (*mongo.UpdateResult, error) {
+	col := client.Database(dbName).Collection(constants.Orders)
+	res, err := col.UpdateByID(ctx, orderID, bson.M{"$set": bson.M{"status": newStatus}})
+	return res, err
 }

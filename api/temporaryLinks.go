@@ -34,7 +34,7 @@ func startAPILinkEmailTask(url string, recipientEmail string) {
 	
 	<p>
 	Below is a <em>single-use</em> link that returns an API Key.
-	This API Key allows your application to authentic with the Data DJ API.
+	This API Key allows your application to authenticate with the Data DJ API.
 	<br/>
 	<br/>
 	The Key can only be viewed once. It should be saved somewhere securely (e.g. password manager), not disclosed to users or client side code, and should not be hardcoded or checked into repositories.</p>
