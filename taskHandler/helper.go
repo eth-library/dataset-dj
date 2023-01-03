@@ -9,21 +9,7 @@ import (
 )
 
 func startDownloadLinkEmailTask(url string, recipientEmail string) {
-	content := fmt.Sprintf(`
-	<h1>Your Download was completed</h1>
-
-	<p>Thanks for using the Data DJ!</p>
-	
-	<p>
-	Please use the link below to retrieve the requested files.
-	</p>
-	<p>
-	   <a href="%v" target="_">%v</a> <br/>
-	   (click or copy & paste into your browser)
-	</p>
-	
-	In case of issues, please contact us at contact@librarylab.ethz.ch
-	`, url, url)
+	content := fmt.Sprintf(mailHandler.DownloadLinkContent, url, url)
 
 	emailParts := mailHandler.EmailParts{
 		To:         recipientEmail,

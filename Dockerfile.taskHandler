@@ -1,21 +1,11 @@
-FROM golang:1.17 as build-stage
-
+FROM golang:1.19-alpine3.17 AS build
 WORKDIR /app
-
-#add a directory that other directories can be mounted to
-RUN mkdir /data-mount
-
-COPY . /app
-# RUN chmod -R 744 /app/secrets
-COPY ./go.mod /app/go.mod
-COPY ./go.sum /app/go.sum
+COPY . .
 
 WORKDIR /app/taskHandler
-RUN go build -o main .
+RUN go build -o main
 
-FROM build-stage
-
-RUN useradd --create-home --shell /bin/bash datadj
-USER datadj
-
-CMD ["/app/taskHandler/main"]
+FROM alpine:3.17
+COPY --from=build /app/taskHandler/main .
+COPY ./gcloud-key-file.json .
+CMD ["./main"]
