@@ -4,6 +4,5 @@ notebooks/
 data/
 data_test/
 mongodb_data/
-docker-compose.yml
 testsIntegration/
 manager/

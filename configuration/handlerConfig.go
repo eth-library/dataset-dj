@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	defaultJobs     = 1
-	defaultInterval = 900
-	defaultURL      = "https://dj-api-ucooq6lz5a-oa.a.run.app"
+	defaultJobs       = 1
+	defaultInterval   = 900
+	defaultURL        = "https://dj-api-ucooq6lz5a-oa.a.run.app"
+	defaultArchiveDir = "./results"
 )
 
 type HandlerConfig struct {
@@ -27,6 +28,7 @@ type HandlerConfig struct {
 	ServiceEmailHost     string // The email server to connect to
 	ServiceEmailAddress  string // email address for sending the form and download link
 	ServiceEmailPassword string // password for email address
+	ArchiveDir           string
 }
 
 func lookupTime(key string) time.Time {
@@ -88,20 +90,26 @@ func InitHandlerConfig() *HandlerConfig {
 
 	// Email host
 	emailHost := lookupString("EMAIL_HOST", "")
-	if handlerKey == "" {
+	if emailHost == "" {
 		log.Fatal("EMAIL_HOST cannot be empty!")
 	}
 
 	// Email address
 	emailAddress := lookupString("EMAIL_ADDRESS", "")
-	if handlerKey == "" {
+	if emailAddress == "" {
 		log.Fatal("EMAIL_ADDRESS cannot be empty!")
 	}
 
 	// Email password
 	emailPassword := lookupString("EMAIL_PASSWORD", "")
-	if handlerKey == "" {
+	if emailPassword == "" {
 		log.Fatal("EMAIL_PASSWORD cannot be empty!")
+	}
+
+	// Directory where zipped archives are stored
+	archiveDir := lookupString("ARCHIVE_DIR", defaultArchiveDir)
+	if archiveDir == "" {
+		log.Fatal("ARCHIVE_DIR cannot be empty!")
 	}
 
 	// Source Ids
@@ -126,6 +134,7 @@ func InitHandlerConfig() *HandlerConfig {
 		ServiceEmailHost:     emailHost,     // for example: "smtp.gmail.com"
 		ServiceEmailAddress:  emailAddress,  // for example: "datadj.service@gmail.com"
 		ServiceEmailPassword: emailPassword, // gotta find a good one yourself
+		ArchiveDir:           archiveDir,
 	}
 	pretty, _ := json.MarshalIndent(hc, "", "  ")
 	fmt.Print("config: \n", string(pretty), "\n")

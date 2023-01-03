@@ -1,10 +1,13 @@
 package main
 
 import (
+	"archive/zip"
 	"fmt"
 	"github.com/eth-library/dataset-dj/dbutil"
 	"github.com/eth-library/dataset-dj/mailHandler"
+	"io"
 	"log"
+	"os"
 	"time"
 )
 
@@ -50,11 +53,11 @@ func getNow() time.Time {
 	return now
 }
 
-func parseTimes(orders []dbutil.Order) []dbutil.OrderTime {
-	var res []dbutil.OrderTime
+func parseTimes(orders []dbutil.Order) []dbutil.TimedOrder {
+	var res []dbutil.TimedOrder
 	for _, o := range orders {
 		date, _ := time.Parse(time.RFC822, o.Date)
-		res = append(res, dbutil.OrderTime{
+		res = append(res, dbutil.TimedOrder{
 			OrderID:   o.OrderID,
 			ArchiveID: o.ArchiveID,
 			Email:     o.Email,
@@ -64,4 +67,35 @@ func parseTimes(orders []dbutil.Order) []dbutil.OrderTime {
 		})
 	}
 	return res
+}
+
+// WriteLocalToZip is a helper function for writing an individual local file to zip.Writer object
+func WriteLocalToZip(fileName string, writer *zip.Writer) error {
+
+	if !fileExists(fileName) {
+		return fmt.Errorf("file does not exist: %s\n", fileName)
+	}
+	f, err := os.Open(fileName)
+	defer f.Close()
+	if err != nil {
+		return fmt.Errorf("could not find file: %s\n%s", fileName, err)
+	}
+
+	w, err := writer.Create(fileName)
+	if err != nil {
+		return fmt.Errorf("could not create file in archive: %s", fileName)
+	}
+
+	if _, err := io.Copy(w, f); err != nil {
+		return fmt.Errorf("could not write to file in archive: %s", fileName)
+	}
+	return nil
+}
+
+func fileExists(fpath string) bool {
+	_, err := os.Stat(fpath)
+	if err == nil {
+		return true
+	}
+	return false
 }

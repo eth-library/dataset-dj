@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"sort"
 	"time"
 )
@@ -29,7 +31,7 @@ func clientLoop() {
 
 	for {
 		if len(orders) != 0 {
-			var order dbutil.OrderTime
+			var order dbutil.TimedOrder
 			order, orders = orders[0], orders[1:]
 			err := fulfillOrder(order)
 			if err != nil {
@@ -54,20 +56,23 @@ func clientLoop() {
 	}
 }
 
-func fulfillOrder(order dbutil.OrderTime) error {
+func fulfillOrder(order dbutil.TimedOrder) error {
 	err := acknowledgeOrder(order.OrderID, constants.Processing)
 	if err != nil {
 		return err
 	}
+	// ----------------------------
 	// This is where the files are downloaded, compressed and stored in a new location
-	time.Sleep(15 * time.Second)
+	url, err := zipFiles(order)
+	time.Sleep(15 * time.Second) // Only for testing purposes, should be removed afterwards
+	// ----------------------------
 	err = acknowledgeOrder(order.OrderID, constants.Closed)
 	fmt.Printf("Order %s has been fulfilled and the files from archive %s were downloaded\n",
 		order.OrderID, order.ArchiveID)
 	if err != nil {
 		return err
 	}
-	startDownloadLinkEmailTask("dummy-url", order.Email)
+	startDownloadLinkEmailTask(url, order.Email)
 	return nil
 }
 
@@ -97,7 +102,7 @@ func acknowledgeOrder(orderID string, status string) error {
 	}
 }
 
-func requestOrders() ([]dbutil.OrderTime, error) {
+func requestOrders() ([]dbutil.TimedOrder, error) {
 	url := config.TargetURL + "/handler/orders"
 	reqBody, err := json.Marshal(OrderRequestBody{Sources: config.Sources})
 	if err != nil {
@@ -130,4 +135,63 @@ func requestOrders() ([]dbutil.OrderTime, error) {
 		return orders[i].Date.Before(orders[j].Date)
 	})
 	return orders, nil
+}
+
+func requestArchive(archiveID string) (*dbutil.MetaArchive, error) {
+	url := config.TargetURL + "/archive/" + archiveID
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+config.HandlerKey)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("unable to request archive from API: %s", err)
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Println("unable to close response body! Risk of memory leaks if the problem persists")
+		}
+	}(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read response body: %s", err)
+	}
+	var archive dbutil.MetaArchive
+	err = json.Unmarshal(respBody, &archive)
+	if err != nil {
+		return nil, fmt.Errorf("unable to unmarshal meta archive: %s", err)
+	}
+	return &archive, nil
+}
+
+func zipFiles(order dbutil.TimedOrder) (string, error) {
+	// fmt.Println("creating local zip archive...")
+	archiveFilePath := config.ArchiveDir + "/" + constants.ArchiveBaseName + "_" + order.ArchiveID + ".zip"
+	zipPath, err := os.Create(archiveFilePath)
+	if err != nil {
+		log.Print("ERROR: while creating local zip file:", err)
+	}
+	defer zipPath.Close()
+	zipWriter := zip.NewWriter(zipPath)
+	archive, err := requestArchive(order.ArchiveID)
+	if err != nil {
+		return "", fmt.Errorf("error while retrieving archive information: %s", err)
+	}
+
+	for _, fg := range archive.Content {
+		for i, file := range fg.Files.ToSlice() {
+			err := WriteLocalToZip(file, zipWriter)
+			if err != nil {
+				fmt.Printf("\r zipping file %d / %d: %s\n", i+1, len(fg.Files.ToSlice()), file)
+				log.Print(err)
+			}
+		}
+	}
+
+	err = zipWriter.Close()
+	if err != nil {
+		return "", fmt.Errorf("unable to close response body!"+
+			" Risk of memory leaks if the problem persists: %s", err)
+	}
+	return archiveFilePath, nil
 }

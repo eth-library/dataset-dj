@@ -22,7 +22,7 @@ type Order struct {
 	Sources   []string `json:"sources" bson:"sources"`
 }
 
-type OrderTime struct {
+type TimedOrder struct {
 	OrderID   string    `json:"orderID" bson:"_id,omitempty"`
 	ArchiveID string    `json:"archiveID" bson:"archiveID"`
 	Email     string    `json:"email" bson:"email"`
