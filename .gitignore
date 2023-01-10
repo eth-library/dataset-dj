@@ -140,3 +140,4 @@ dmypy.json
 collection/
 storage/
 password.go
+.DS_Store
