@@ -144,7 +144,7 @@ func requestOrders() ([]dbutil.TimedOrder, error) {
 
 func requestArchive(archiveID string) (*dbutil.MetaArchive, error) {
 	fmt.Println("requesting archive from api...")
-	url := config.TargetURL + "/archive/" + archiveID
+	url := config.TargetURL + "/handler/archive/" + archiveID
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+config.HandlerKey)
