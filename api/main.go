@@ -42,6 +42,7 @@ func setupRouter() *gin.Engine {
 	{
 		handler.POST("/orders", listOrders)
 		handler.POST("/order/:id", updateStatus)
+		handler.GET("/archive/:id", inspectArchive) // resolves to /handler/archive/:id
 	}
 
 	return router
