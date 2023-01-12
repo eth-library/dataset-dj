@@ -5,14 +5,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/eth-library/dataset-dj/constants"
-	"github.com/eth-library/dataset-dj/dbutil"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"sort"
+	"strings"
 	"time"
+
+	"github.com/eth-library/dataset-dj/constants"
+	"github.com/eth-library/dataset-dj/dbutil"
 )
 
 func clientLoop() {
@@ -64,7 +66,10 @@ func fulfillOrder(order dbutil.TimedOrder) error {
 	// ----------------------------
 	// This is where the files are downloaded, compressed and stored in a new location
 	url, err := zipFiles(order)
-	time.Sleep(15 * time.Second) // Only for testing purposes, should be removed afterwards
+	if err != nil {
+		return err
+	}
+	time.Sleep(3 * time.Second) // Only for testing purposes, should be removed afterwards
 	// ----------------------------
 	err = acknowledgeOrder(order.OrderID, constants.Closed)
 	fmt.Printf("Order %s has been fulfilled and the files from archive %s were downloaded\n",
@@ -138,6 +143,7 @@ func requestOrders() ([]dbutil.TimedOrder, error) {
 }
 
 func requestArchive(archiveID string) (*dbutil.MetaArchive, error) {
+	fmt.Println("requesting archive from api...")
 	url := config.TargetURL + "/archive/" + archiveID
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	req.Header.Add("Content-Type", "application/json")
@@ -156,16 +162,21 @@ func requestArchive(archiveID string) (*dbutil.MetaArchive, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to read response body: %s", err)
 	}
+	if strings.Contains(string(respBody), "Insufficient Token Permission for Request") {
+		return nil, fmt.Errorf("error: %s", string(respBody))
+	}
+
 	var archive dbutil.MetaArchive
 	err = json.Unmarshal(respBody, &archive)
 	if err != nil {
 		return nil, fmt.Errorf("unable to unmarshal meta archive: %s", err)
 	}
+	fmt.Println(archive.ID, " : ", archive.Content)
 	return &archive, nil
 }
 
 func zipFiles(order dbutil.TimedOrder) (string, error) {
-	// fmt.Println("creating local zip archive...")
+	fmt.Println("creating local zip archive...")
 	archiveFilePath := config.ArchiveDir + "/" + constants.ArchiveBaseName + "_" + order.ArchiveID + ".zip"
 	zipPath, err := os.Create(archiveFilePath)
 	if err != nil {
