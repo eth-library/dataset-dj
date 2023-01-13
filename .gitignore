@@ -145,3 +145,4 @@ password.go
 # Mac and VS - things
 .DS_Store
 .devcontainer
+archive-response.json
