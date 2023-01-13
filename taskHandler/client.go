@@ -142,7 +142,7 @@ func requestOrders() ([]dbutil.TimedOrder, error) {
 	return orders, nil
 }
 
-func requestArchive(archiveID string) (*dbutil.MetaArchive, error) {
+func requestArchive(archiveID string) (*Archive, error) {
 	fmt.Println("requesting archive from api...")
 	url := config.TargetURL + "/handler/archive/" + archiveID
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -166,7 +166,7 @@ func requestArchive(archiveID string) (*dbutil.MetaArchive, error) {
 		return nil, fmt.Errorf("error: %s", string(respBody))
 	}
 
-	var archive dbutil.MetaArchive
+	var archive Archive
 	err = json.Unmarshal(respBody, &archive)
 	if err != nil {
 		return nil, fmt.Errorf("unable to unmarshal meta archive: %s", err)
@@ -190,10 +190,10 @@ func zipFiles(order dbutil.TimedOrder) (string, error) {
 	}
 
 	for _, fg := range archive.Content {
-		for i, file := range fg.Files.ToSlice() {
+		for i, file := range fg.Files {
 			err := WriteLocalToZip(file, zipWriter)
 			if err != nil {
-				fmt.Printf("\r zipping file %d / %d: %s\n", i+1, len(fg.Files.ToSlice()), file)
+				fmt.Printf("\r zipping file %d / %d: %s\n", i+1, len(fg.Files), file)
 				log.Print(err)
 			}
 		}
