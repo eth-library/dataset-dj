@@ -7,6 +7,8 @@ mongodb_data/
 gcloud-app-key-file.json
 *key-file.json
 .env*
+taskHandler/results*
+taskHandler/e-periodica*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -146,3 +148,4 @@ password.go
 .DS_Store
 .devcontainer
 archive-response.json
+taskHandler/conf.d/.secrets.yml

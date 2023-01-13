@@ -1,0 +1,3 @@
+host: "https://libdrive.ethz.ch/"
+apiPath: "ocs/v1.php/apps/files_sharing/api/v1/"
+webdavPath: "remote.php/dav/files/"

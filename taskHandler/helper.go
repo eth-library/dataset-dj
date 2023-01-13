@@ -3,13 +3,56 @@ package main
 import (
 	"archive/zip"
 	"fmt"
-	"github.com/eth-library/dataset-dj/dbutil"
-	"github.com/eth-library/dataset-dj/mailHandler"
 	"io"
 	"log"
 	"os"
 	"time"
+
+	"github.com/eth-library/dataset-dj/dbutil"
+	"github.com/eth-library/dataset-dj/mailHandler"
+
+	"gopkg.in/yaml.v3"
 )
+
+func InitConfig(configPath string) *ApplicationConfig {
+	var config ApplicationConfig
+	yamlFile, err := os.ReadFile(configPath + "taskhandler.yml")
+	if err != nil {
+		log.Fatalln("critical", "No config found, will stop now.", err)
+	}
+
+	if err = yaml.Unmarshal(yamlFile, &config); err != nil {
+		log.Fatalln("ERROR parsing config", fmt.Sprint(err))
+	}
+
+	return &config
+}
+
+func loadSecrets(configPath string) *Secrets {
+	var secrets Secrets
+	yamlFile, err := os.ReadFile(configPath + ".secrets.yml")
+	if err != nil {
+		log.Fatalln("critical", "No .secrets file at "+configPath+".secrets"+" found, will stop now.")
+	}
+	if err = yaml.Unmarshal(yamlFile, &secrets); err != nil {
+		log.Fatalln("ERROR parsing secrets", fmt.Sprint(err))
+	}
+	return &secrets
+}
+
+func loadLibDriveConfig(configPath string) *LibDriveConfig {
+	var config LibDriveConfig
+	yamlFile, err := os.ReadFile(configPath + "libDrive.yml")
+	if err != nil {
+		log.Fatalln("critical", "No config found, will stop now.", err)
+	}
+
+	if err = yaml.Unmarshal(yamlFile, &config); err != nil {
+		log.Fatalln("ERROR parsing config", fmt.Sprint(err))
+	}
+
+	return &config
+}
 
 func startDownloadLinkEmailTask(url string, recipientEmail string) {
 	content := fmt.Sprintf(mailHandler.DownloadLinkContent, url, url)
