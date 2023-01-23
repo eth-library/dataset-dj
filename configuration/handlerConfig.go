@@ -1,8 +1,6 @@
 package configuration
 
 import (
-	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -136,7 +134,7 @@ func InitHandlerConfig() *HandlerConfig {
 		ServiceEmailPassword: emailPassword, // gotta find a good one yourself
 		ArchiveDir:           archiveDir,
 	}
-	pretty, _ := json.MarshalIndent(hc, "", "  ")
-	fmt.Print("config: \n", string(pretty), "\n")
+	// pretty, _ := json.MarshalIndent(hc, "", "  ")
+	// fmt.Print("config: \n", string(pretty), "\n")
 	return &hc
 }

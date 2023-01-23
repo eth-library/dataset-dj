@@ -12,5 +12,6 @@ const (
 	Opened          = "opened"
 	Processing      = "processing"
 	Closed          = "closed"
+	Rejected        = "rejected"
 	ArchiveBaseName = "archive"
 )

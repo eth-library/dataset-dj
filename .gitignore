@@ -149,3 +149,4 @@ password.go
 .devcontainer
 archive-response.json
 taskHandler/conf.d/.secrets.yml
+taskHandler/taskHandler
