@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/eth-library/dataset-dj/constants"
 	"log"
 	"net/http"
+
+	"github.com/eth-library/dataset-dj/constants"
 
 	"github.com/eth-library/dataset-dj/dbutil"
 	"github.com/gin-gonic/gin"
@@ -186,6 +187,7 @@ func updateStatus(c *gin.Context) {
 		return
 	}
 	if (order.Status == constants.Opened && request.NewStatus == constants.Processing) ||
+		(order.Status == constants.Opened && request.NewStatus == constants.Rejected) ||
 		(order.Status == constants.Processing && request.NewStatus == constants.Closed) {
 		_, err := dbutil.UpdateOrderStatus(runtime.MongoCtx, runtime.MongoClient, config.DbName, id,
 			request.NewStatus)
